@@ -1,0 +1,148 @@
+// --------------------------------------------------------------------------
+// Ruup Admin – Invoice Generator schema (Phase 2)
+// Database: SQLite  (DATABASE_URL = "file:./dev.db")
+// --------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Product / Service ─────────────────────────────────────────────────────
+model ProductService {
+  id          String   @id @default(cuid())
+  type        String // e.g. "GATC Stamping", "Weighbridge Sale", "AMC Contract"
+  name        String
+  description String
+  hsnCode     String?
+  basePrice   Float    @default(0)
+  taxRate     Float    @default(18)
+  unit        String   @default("Nos")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ── Invoice ───────────────────────────────────────────────────────────────
+model Invoice {
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique
+  mode          String // "AUTO" | "MANUAL"
+  status        String   @default("DRAFT") // "DRAFT" | "GENERATED" | "CANCELLED"
+  invoiceDate   DateTime
+
+  // Snapshot fields — immutable after invoice creation
+  clientNameSnapshot        String
+  clientCompanyNameSnapshot String?
+  clientAddressSnapshot     String
+  clientGstinSnapshot       String?
+  clientMobileSnapshot      String?
+
+  // Firm details
+  firmType                  String?
+  firmName                  String?
+  doorNo                    String?
+  street                    String?
+  locality                  String?
+  pinCode                   String?
+  contactPersonName         String?
+  contactPersonNumber       String?
+  personUniqueNumberType    String?
+  personUniqueNumber        String?
+
+  // Proprietor / MD / Director Details
+  proprietorSalutation      String?
+  proprietorName            String?
+  relationType              String?
+  relativeSalutation        String?
+  relativeName              String?
+  proprietorContactNumber   String?
+  proprietorEmail           String?
+
+  // Instrument details
+  typeOfInstrument    String?
+  capacity            String?
+  make                String?
+  model               String?
+  serialNumber        String?
+  accuracyClass       String?
+  modelApprovalNumber String?
+
+  // Financial totals (always recalculated on the backend)
+  subtotal   Float @default(0)
+  cgstAmount Float @default(0)
+  sgstAmount Float @default(0)
+  taxAmount  Float @default(0)
+  totalAmount Float @default(0)
+
+  // Signatures
+  customerSignature          String? // data-URL PNG from signature pad
+  authorizedSignatoryName    String?
+  authorizedSignatureSnapshot String? // data-URL snapshot at generation time
+
+  // PDF storage
+  pdfUrl String?
+
+  // The owner is set exclusively by the server from the authenticated session.
+  createdById String?
+  createdBy   AdminUser? @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items InvoiceItem[]
+}
+
+// ── Portal users ─────────────────────────────────────────────────────────
+model AdminUser {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  displayName  String
+  email        String?   @unique
+  passwordHash String
+  role         String    @default("ADMIN") // "SUPER_ADMIN" | "ADMIN"
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  invoices          Invoice[]
+  signatureSettings SignatureSetting[]
+}
+
+// ── Invoice Item ──────────────────────────────────────────────────────────
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  hsnCode     String?
+  quantity    Float
+  unit        String   @default("Nos")
+  rate        Float
+  taxRate     Float    @default(18)
+  amount      Float    @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// ── Signature Setting ─────────────────────────────────────────────────────
+model SignatureSetting {
+  id               String   @id @default(cuid())
+  // Kept during migration so existing one-admin signature records are not discarded.
+  adminEmail       String?  @unique
+  adminUserId      String?  @unique
+  adminUser        AdminUser? @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  signatoryName    String?
+  signatureDataUrl String? // data-URL PNG
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ── Invoice Counter (atomic invoice-number generation) ────────────────────
+model InvoiceCounter {
+  id         String @id @default(cuid())
+  year       Int    @unique
+  lastNumber Int    @default(0)
+}

@@ -1,0 +1,8 @@
+.next
+node_modules
+*.tsbuildinfo
+.env
+prisma/dev.db
+prisma/dev.db-journal
+public/generated-invoices/*.pdf
+.env.local
