@@ -77,7 +77,7 @@ export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSe
       totalAmount: totals.totalAmount,
       customerSignature: input.customerSignature,
       authorizedSignatoryName: signatureSetting?.signatoryName ?? "Vishwakarma Services",
-      authorizedSignatureSnapshot: signatureSetting?.signatureDataUrl ?? null,
+      authorizedSignatureSnapshot: signatureSetting?.signatureImageUrl ?? signatureSetting?.signatureDataUrl ?? null,
       createdById: admin.id,
       items: {
         create: totals.items.map((item) => ({

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FilePlus2, FileText, LayoutDashboard, LogOut, Settings, Users } from "lucide-react";
+import { FilePlus2, FileText, LayoutDashboard, LogOut, PenLine, Settings, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -55,6 +55,7 @@ export function Sidebar({ session }: { session: AdminSession | null }) {
           {(session?.role === "SUPER_ADMIN" ? [
             { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
             { name: "Admin Accounts", href: "/admin/admins", icon: Users },
+            { name: "Signatures", href: "/admin/signatures", icon: PenLine },
             { name: "Invoice Activity", href: "/admin/invoices", icon: FileText },
           ] : [
             { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },

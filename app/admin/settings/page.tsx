@@ -4,7 +4,6 @@ import { requireRole } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
-  await requireRole("ADMIN");
-  return <SignatureSettings />;
+  const session = await requireRole("ADMIN");
+  return <SignatureSettings adminId={session.id} />;
 }
-

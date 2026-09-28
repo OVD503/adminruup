@@ -135,7 +135,8 @@ model SignatureSetting {
   adminUserId      String?  @unique
   adminUser        AdminUser? @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
   signatoryName    String?
-  signatureDataUrl String? // data-URL PNG
+  signatureDataUrl String? // legacy data-URL PNG (deprecated)
+  signatureImageUrl String? // Cloudflare R2 public URL for uploaded PNG
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
