@@ -18,7 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const setting = await prisma.signatureSetting.findUnique({ where: { adminUserId: id } });
 
   return NextResponse.json({
-    signatoryName: setting?.signatoryName || "Vishwakarma Services",
+    signatoryName: setting?.signatoryName || "Gottimukkala Shyam Sunder",
     signatureImageUrl: setting?.signatureImageUrl || null,
   });
 }
@@ -38,7 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const formData = await request.formData();
     const file = formData.get("signature") as File | null;
-    const signatoryName = (formData.get("signatoryName") as string)?.trim() || "Vishwakarma Services";
+    const signatoryName = (formData.get("signatoryName") as string)?.trim() || "Gottimukkala Shyam Sunder";
 
     if (!file || !file.size) {
       return NextResponse.json({ error: "Signature image file is required." }, { status: 400 });

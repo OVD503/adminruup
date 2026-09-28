@@ -89,7 +89,7 @@ export function SignatureManagement() {
     event.target.value = "";
 
     const adminId = selectedAdminId;
-    const sigName = signatures[adminId]?.signatoryName || "Vishwakarma Services";
+    const sigName = signatures[adminId]?.signatoryName || "Gottimukkala Shyam Sunder";
     setUploadingFor(adminId);
 
     try {
@@ -134,7 +134,7 @@ export function SignatureManagement() {
   }
 
   async function saveSignatoryName(adminId: string) {
-    const name = tempName.trim() || "Vishwakarma Services";
+    const name = tempName.trim() || "Gottimukkala Shyam Sunder";
     setEditingNameFor(null);
 
     try {
@@ -274,7 +274,7 @@ export function SignatureManagement() {
                       ) : (
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-slate-800">
-                            {sig?.signatoryName || "Vishwakarma Services"}
+                            {sig?.signatoryName || "Gottimukkala Shyam Sunder"}
                           </span>
                           <Button
                             size="icon"
@@ -284,7 +284,7 @@ export function SignatureManagement() {
                             onClick={() => {
                               setEditingNameFor(admin.id);
                               setTempName(
-                                sig?.signatoryName || "Vishwakarma Services",
+                                sig?.signatoryName || "Gottimukkala Shyam Sunder",
                               );
                             }}
                           >

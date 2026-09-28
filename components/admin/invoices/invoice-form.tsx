@@ -30,6 +30,7 @@ interface FeeCalculationRow {
   type: string;
   subType: string;
   extraInputs: string;
+  make?: string;
   noOfMachines?: string;
   maxValue?: string;
   minValue?: string;
@@ -104,6 +105,17 @@ export function InvoiceForm() {
   const [createdInvoice, setCreatedInvoice] = useState<{ pdfUrl?: string | null; invoiceNumber?: string } | null>(null);
   const [serviceReportStatus, setServiceReportStatus] = useState("");
   const [whatChangedDetails, setWhatChangedDetails] = useState("");
+  const [calibrationPhoto, setCalibrationPhoto] = useState<string | null>(null);
+  const [stampPhoto, setStampPhoto] = useState<string | null>(null);
+
+  function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 
   const form = useForm<InvoiceInput>({
     resolver: zodResolver(invoiceInputSchema) as any,
@@ -158,6 +170,7 @@ export function InvoiceForm() {
       type: "Select Type",
       subType: "Select Sub Type",
       extraInputs: "",
+      make: "",
       noOfMachines: "",
       maxValue: "",
       minValue: "",
@@ -189,6 +202,7 @@ export function InvoiceForm() {
         type: "Select Type",
         subType: "Select Sub Type",
         extraInputs: "",
+        make: "",
         noOfMachines: "",
         maxValue: "",
         minValue: "",
@@ -390,36 +404,46 @@ export function InvoiceForm() {
 
         const detailsList = [
           row.subType && row.subType !== "Select Sub Type" ? `Sub-Type: ${row.subType}` : "",
+          row.make ? `Make: ${row.make}` : "",
+          row.machineCategory ? `Model Type: ${row.machineCategory}` : "",
+          row.model ? `Model: ${row.model}` : "",
           row.noOfMachines ? `No. of Machines: ${row.noOfMachines}` : "",
           row.maxValue ? `Max Value: ${row.maxValue} kg` : "",
           row.minValue ? `Min Value: ${row.minValue} g` : "",
           row.eValue ? `e-value: ${row.eValue} g` : "",
-          row.machineCategory ? `Model Type: ${row.machineCategory}` : "",
-          row.model ? `Model: ${row.model}` : "",
           row.accuracyClass ? `Class: ${row.accuracyClass}` : ""
         ].filter(Boolean);
 
         const title = row.type && row.type !== "Select Type" ? row.type : "Weighing Instrument";
         const description = detailsList.length > 0 ? `${title} — ${detailsList.join(" | ")}` : title;
 
+        const serviceFeeAmt = Number(row.serviceFee) || 0;
+        const cgstAmt = Number(row.cgst) || 0;
+        const hasTax = serviceFeeAmt > 0 && cgstAmt > 0;
+
         return {
           description,
           hsnCode: "9986",
           quantity: Number(row.noOfMachines) || 1,
           unit: "Job",
-          rate: totalRowPrice || finalFeeToBePaid,
-          taxRate: 0
+          rate: hasTax ? serviceFeeAmt : (totalRowPrice || finalFeeToBePaid),
+          taxRate: hasTax ? 18 : 0
         };
       });
 
       const firstRow = feeRows[0];
+      const checklistPhotos: { label: string; dataUrl: string }[] = [];
+      if (calibrationPhoto) checklistPhotos.push({ label: "Calibration", dataUrl: calibrationPhoto });
+      if (stampPhoto) checklistPhotos.push({ label: "Stamp & Seal", dataUrl: stampPhoto });
+
       const payload = {
         ...values,
         typeOfInstrument: firstRow?.type && firstRow.type !== "Select Type" ? firstRow.type : values.typeOfInstrument,
         capacity: firstRow?.maxValue ? `${firstRow.maxValue} kg` : values.capacity,
         model: firstRow?.model || values.model,
         accuracyClass: firstRow?.accuracyClass || values.accuracyClass,
-        items: values.items && values.items.length > 0 ? values.items : mappedItems
+        items: values.items && values.items.length > 0 ? values.items : mappedItems,
+        checklistPhotos
       };
       const response = await fetch("/api/invoices", {
         method: "POST",
@@ -593,7 +617,13 @@ export function InvoiceForm() {
                           type="file"
                           accept="image/*"
                           className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border file:border-slate-300 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setCalibrationPhoto(await readFileAsDataUrl(file));
+                            else setCalibrationPhoto(null);
+                          }}
                         />
+                        {calibrationPhoto && <span className="text-[10px] text-emerald-600 font-medium">✓ Photo ready</span>}
                       </td>
                     </tr>
                     <tr className="bg-slate-50/60 hover:bg-slate-50">
@@ -607,7 +637,13 @@ export function InvoiceForm() {
                           type="file"
                           accept="image/*"
                           className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border file:border-slate-300 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setStampPhoto(await readFileAsDataUrl(file));
+                            else setStampPhoto(null);
+                          }}
                         />
+                        {stampPhoto && <span className="text-[10px] text-emerald-600 font-medium">✓ Photo ready</span>}
                       </td>
                     </tr>
                     <tr className="bg-white hover:bg-slate-50/50">
@@ -721,15 +757,8 @@ export function InvoiceForm() {
                           className="w-full h-8 rounded border border-slate-300 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                           <option value="Select Type">Select Type</option>
-                          <option value="Automatic Weighing Machine">Automatic Weighing Machine</option>
-                          <option value="Non-Automatic weighing instruments, mechanical (analog/dial indicator) / digital belonging to ordinary and medium accuracy class III & IV">
-                            Non-Automatic weighing instruments, mechanical (analog/dial indicator) / digital belonging to ordinary and medium accuracy class III & IV
-                          </option>
-                          <option value="Non-Automatic weighing instruments, of high accuracy class II and special accuracy class I (mechanical and electronics class I & II)">
-                            Non-Automatic weighing instruments, of high accuracy class II and special accuracy class I (mechanical and electronics class I & II)
-                          </option>
-                          <option value="Totalizing Machine">Totalizing Machine</option>
-                          <option value="Automatic Indexing Instruments">Automatic Indexing Instruments</option>
+                          <option value="Automatic Weighing Instrument (AWI)">Automatic Weighing Instrument (AWI)</option>
+                          <option value="Non-Automatic weighing instruments class III & IV (NAWI)">Non-Automatic weighing instruments class III &amp; IV (NAWI)</option>
                         </select>
                       </td>
                       <td className="p-2.5">
@@ -745,6 +774,47 @@ export function InvoiceForm() {
                       </td>
                       <td className="p-2.5 min-w-[280px]">
                         <div className="space-y-1.5 text-xs text-slate-700 bg-slate-50/50 p-2 rounded border border-slate-200">
+
+                          {/* Make */}
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Make:</span>
+                            <input
+                              type="text"
+                              value={row.make || ""}
+                              onChange={(e) => updateFeeRow(index, "make", e.target.value)}
+                              className="w-24 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                              placeholder="Enter Make"
+                            />
+                          </div>
+
+                          {/* Model Type */}
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Model Type:</span>
+                            <select
+                              value={row.machineCategory || ""}
+                              onChange={(e) => updateFeeRow(index, "machineCategory", e.target.value)}
+                              className="w-24 h-7 rounded border border-slate-300 px-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                            >
+                              <option value="">-- Select --</option>
+                              <option value="TT">Tabletop (TT)</option>
+                              <option value="PF">Platform (PF)</option>
+                              <option value="CR">Crane (CR)</option>
+                            </select>
+                          </div>
+
+                          {/* Model */}
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Model:</span>
+                            <input
+                              type="text"
+                              value={row.model || ""}
+                              onChange={(e) => updateFeeRow(index, "model", e.target.value)}
+                              className="w-24 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                              placeholder="Enter Model"
+                            />
+                          </div>
+
+                          {/* No. of Machines */}
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">No. of Machines under Verification:</span>
                             <input
@@ -756,6 +826,7 @@ export function InvoiceForm() {
                             />
                           </div>
 
+                          {/* Max value */}
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Max value:</span>
                             <div className="flex items-center gap-1">
@@ -776,6 +847,7 @@ export function InvoiceForm() {
                             </div>
                           </div>
 
+                          {/* Min value */}
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Min value:</span>
                             <div className="flex items-center gap-1">
@@ -796,6 +868,7 @@ export function InvoiceForm() {
                             </div>
                           </div>
 
+                          {/* e-value */}
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">e-value:</span>
                             <div className="flex items-center gap-1">
@@ -810,31 +883,7 @@ export function InvoiceForm() {
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Model Type:</span>
-                            <select
-                              value={row.machineCategory || ""}
-                              onChange={(e) => updateFeeRow(index, "machineCategory", e.target.value)}
-                              className="w-24 h-7 rounded border border-slate-300 px-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                            >
-                              <option value="">-- Select --</option>
-                              <option value="TT">Tabletop (TT)</option>
-                              <option value="PF">Platform (PF)</option>
-                              <option value="CR">Crane (CR)</option>
-                            </select>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Model:</span>
-                            <input
-                              type="text"
-                              value={row.model || ""}
-                              onChange={(e) => updateFeeRow(index, "model", e.target.value)}
-                              className="w-20 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                              placeholder="Enter Model"
-                            />
-                          </div>
-
+                          {/* Class */}
                           <div className="flex items-center justify-between pt-1 border-t border-slate-200">
                             <span className="text-[11px] font-medium text-slate-600">Class:</span>
                             <div className="flex items-center gap-2">

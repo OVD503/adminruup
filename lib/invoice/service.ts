@@ -7,6 +7,8 @@ import { roundMoney, calculateInvoiceTotals, buildInvoiceStorageKey } from "@/li
 
 export { roundMoney, calculateInvoiceTotals, buildInvoiceStorageKey };
 
+export type ChecklistPhoto = { label: string; dataUrl: string };
+
 async function nextInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear();
 
@@ -19,7 +21,7 @@ async function nextInvoiceNumber(): Promise<string> {
   return `INV-${year}-${String(counter.lastNumber).padStart(3, "0")}`;
 }
 
-export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSession) {
+export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSession, checklistPhotos?: ChecklistPhoto[]) {
   if (input.status !== "DRAFT") assertR2Configured();
 
   const totals = calculateInvoiceTotals(input.items);
@@ -76,7 +78,7 @@ export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSe
       taxAmount: totals.taxAmount,
       totalAmount: totals.totalAmount,
       customerSignature: input.customerSignature,
-      authorizedSignatoryName: signatureSetting?.signatoryName ?? "Vishwakarma Services",
+      authorizedSignatoryName: signatureSetting?.signatoryName ?? "Gottimukkala Shyam Sunder",
       authorizedSignatureSnapshot: signatureSetting?.signatureImageUrl ?? signatureSetting?.signatureDataUrl ?? null,
       createdById: admin.id,
       items: {
@@ -99,7 +101,7 @@ export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSe
   }
 
   // Generate PDF and upload to R2
-  const pdf = await renderInvoicePdf(invoice);
+  const pdf = await renderInvoicePdf(invoice, checklistPhotos);
   const pdfUrl = await uploadToR2(pdf, buildInvoiceStorageKey(invoice.invoiceNumber, invoice.invoiceDate), "application/pdf");
 
   const updated = await prisma.invoice.update({

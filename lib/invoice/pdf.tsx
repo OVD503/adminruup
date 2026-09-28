@@ -1,6 +1,8 @@
 import React from "react";
 import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 
+export type ChecklistPhoto = { label: string; dataUrl: string };
+
 type InvoiceItem = {
   id?: string;
   description: string;
@@ -50,124 +52,135 @@ type InvoiceWithItems = {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 16,
+    padding: 12,
     fontFamily: "Helvetica",
-    fontSize: 8,
-    color: "#0f172a"
+    fontSize: 9,
+    color: "#000000"
   },
   shell: {
-    border: "1.5 solid #1e293b",
-    padding: 10,
-    minHeight: "97%"
+    border: "2 solid #000000",
+    padding: 8,
+    minHeight: "98%",
+    display: "flex",
+    flexDirection: "column"
   },
   headerBox: {
     textAlign: "center",
-    borderBottom: "1.5 solid #1e293b",
+    borderBottom: "1.5 solid #000000",
     paddingBottom: 6,
-    marginBottom: 6
+    marginBottom: 4
   },
   govTitle: {
-    fontSize: 13,
+    fontSize: 22,
     fontWeight: 700,
     letterSpacing: 0.5,
     textAlign: "center",
-    textTransform: "uppercase"
+    textTransform: "uppercase",
+    color: "#000000"
   },
   subTitleText: {
-    fontSize: 7.5,
-    fontStyle: "italic",
-    textAlign: "center",
-    marginTop: 1
-  },
-  gatcNo: {
-    fontSize: 8.5,
-    fontWeight: 700,
-    textAlign: "center",
-    marginTop: 2
-  },
-  companyName: {
     fontSize: 12,
     fontWeight: 700,
     textAlign: "center",
+    marginTop: 1.5,
+    color: "#000000"
+  },
+  gatcNo: {
+    fontSize: 15,
+    fontWeight: 700,
+    textAlign: "center",
+    marginTop: 2.5,
+    color: "#000000"
+  },
+  companyName: {
+    fontSize: 10,
+    fontWeight: 700,
+    textAlign: "center",
     marginTop: 3,
-    letterSpacing: 0.5
+    letterSpacing: 0.5,
+    color: "#000000"
   },
   companyAddress: {
-    fontSize: 7.5,
+    fontSize: 8.5,
+    fontWeight: 700,
     textAlign: "center",
-    marginTop: 1
+    marginTop: 1.5,
+    color: "#000000"
   },
   contactRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    fontSize: 7.5,
+    fontSize: 9,
+    fontWeight: 700,
     marginTop: 3,
-    paddingHorizontal: 4
+    paddingHorizontal: 6,
+    color: "#000000"
   },
   complaintMobile: {
-    fontSize: 8.5,
+    fontSize: 9,
     fontWeight: 700,
     textAlign: "center",
-    marginTop: 2
+    marginTop: 2,
+    color: "#000000"
   },
   invoiceBanner: {
     marginVertical: 4,
-    paddingVertical: 3,
-    backgroundColor: "#1e293b",
+    paddingVertical: 3.5,
+    backgroundColor: "#0F172A",
     textAlign: "center"
   },
   invoiceBannerText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 700,
     color: "#ffffff",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
     textTransform: "uppercase"
   },
   metaGrid: {
     flexDirection: "row",
-    border: "1 solid #cbd5e1",
+    border: "1.5 solid #000000",
     marginBottom: 6
   },
   metaColLeft: {
-    width: "50%",
+    width: "48%",
     padding: 5,
-    borderRight: "1 solid #cbd5e1"
+    borderRight: "1.5 solid #000000"
   },
   metaColRight: {
-    width: "50%",
+    width: "52%",
     padding: 5
   },
   metaRow: {
     flexDirection: "row",
-    marginVertical: 1
+    marginVertical: 1.5
   },
   metaLabel: {
-    width: "38%",
-    fontSize: 7.5,
-    color: "#475569",
+    width: "40%",
+    fontSize: 9,
+    color: "#000000",
     fontWeight: 700
   },
   metaVal: {
-    width: "62%",
-    fontSize: 7.5,
-    color: "#0f172a"
+    width: "60%",
+    fontSize: 9,
+    color: "#000000",
+    fontWeight: 700
   },
-  // Key Yellow Section from Image 3/4
   yellowSection: {
-    backgroundColor: "#fffde7",
-    border: "1.5 solid #ca8a04",
-    marginTop: 4,
+    backgroundColor: "#FFF5C4",
+    border: "2 solid #CA8A04",
+    marginTop: 2,
     marginBottom: 6
   },
   tableHeaderRow: {
     flexDirection: "row",
-    backgroundColor: "#1e293b",
+    backgroundColor: "#0F172A",
     color: "#ffffff",
-    minHeight: 22,
+    minHeight: 24,
     alignItems: "center"
   },
   tableHeaderCell: {
-    fontSize: 7.5,
+    fontSize: 8.5,
     fontWeight: 700,
     textAlign: "center",
     padding: 3,
@@ -176,63 +189,111 @@ const styles = StyleSheet.create({
   },
   tableBodyRow: {
     flexDirection: "row",
-    backgroundColor: "#fef9c3",
-    borderBottom: "1 dotted #eab308",
-    minHeight: 40
+    backgroundColor: "#FFF9C4",
+    borderBottom: "1 dotted #CA8A04",
+    minHeight: 45
   },
   tableBodyCell: {
     padding: 4,
-    fontSize: 7.5,
-    color: "#1e293b",
-    borderRight: "1 dotted #eab308"
+    fontSize: 9,
+    color: "#000000",
+    borderRight: "1 dotted #CA8A04"
   },
   specLine: {
-    fontSize: 7.5,
-    marginVertical: 0.5
+    fontSize: 8.5,
+    marginVertical: 1,
+    color: "#000000"
   },
   specBold: {
     fontWeight: 700
   },
   totalRow: {
     flexDirection: "row",
-    backgroundColor: "#fef08a",
-    borderTop: "1.5 solid #ca8a04"
+    backgroundColor: "#FDE047",
+    borderTop: "2 solid #CA8A04"
   },
   totalCell: {
     padding: 4,
-    fontSize: 8,
+    fontSize: 9.5,
     fontWeight: 700,
-    color: "#0f172a",
-    borderRight: "1 solid #ca8a04"
+    color: "#000000",
+    borderRight: "1 solid #CA8A04"
   },
   grandTotalBox: {
     padding: 6,
-    backgroundColor: "#fef9c3",
-    border: "1 solid #eab308",
+    backgroundColor: "#FFF9C4",
+    border: "1.5 solid #CA8A04",
     marginBottom: 8
   },
   grandTotalText: {
-    fontSize: 8.5,
-    color: "#0f172a"
+    fontSize: 9.5,
+    color: "#000000"
   },
   bold: {
     fontWeight: 700
   },
   footerSignatures: {
-    marginTop: 15,
+    marginTop: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end"
   },
   signBlock: {
     alignItems: "center",
-    width: "42%"
+    width: "45%"
   },
   signatureImage: {
     width: 100,
     height: 40,
     objectFit: "contain",
     marginBottom: 2
+  },
+  checklistSection: {
+    marginTop: 8,
+    border: "1.5 solid #000000",
+    flexGrow: 1,
+    display: "flex",
+    flexDirection: "column"
+  },
+  checklistSectionTitle: {
+    fontSize: 9,
+    fontWeight: 700,
+    color: "#ffffff",
+    backgroundColor: "#0F172A",
+    padding: 3,
+    textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 0.5
+  },
+  checklistPhotoRow: {
+    flexDirection: "row",
+    borderTop: "1 solid #000000",
+    flexGrow: 1
+  },
+  checklistPhotoBox: {
+    flex: 1,
+    borderRight: "1 solid #000000",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center"
+  },
+  checklistPhotoLabel: {
+    fontSize: 8.5,
+    fontWeight: 700,
+    color: "#ffffff",
+    backgroundColor: "#1E293B",
+    padding: 3,
+    textAlign: "center",
+    width: "100%"
+  },
+  checklistPhotoImg: {
+    width: "100%",
+    height: 180,
+    objectFit: "contain"
+  },
+  checklistPhotoEmpty: {
+    height: 180,
+    width: "100%"
   }
 });
 
@@ -241,6 +302,14 @@ function money(value: unknown) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+}
+
+function taxBreakdown(rate: number, taxRate: number) {
+  if (!taxRate) return { svc: rate, cgst: 0, sgst: 0, total: rate };
+  const taxAmt = Math.round((rate * taxRate) / 100 * 100) / 100;
+  const cgst = Math.round((taxAmt / 2) * 100) / 100;
+  const sgst = Math.round((taxAmt - cgst) * 100) / 100;
+  return { svc: rate, cgst, sgst, total: rate + taxAmt };
 }
 
 function dateStr(value: Date) {
@@ -283,7 +352,7 @@ function parseItemDetails(description: string) {
   return { mainTitle, details };
 }
 
-export function InvoicePdfDocument({ invoice }: { invoice: InvoiceWithItems }) {
+export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: InvoiceWithItems; checklistPhotos?: ChecklistPhoto[] }) {
   const clientName = invoice.firmName || invoice.clientCompanyNameSnapshot || invoice.clientNameSnapshot || "-";
   const proprietorName = invoice.proprietorName || invoice.contactPersonName || "-";
   const address = invoice.clientAddressSnapshot || "-";
@@ -329,45 +398,51 @@ export function InvoicePdfDocument({ invoice }: { invoice: InvoiceWithItems }) {
               </View>
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Invoice Date:</Text>
-                <Text style={styles.metaVal}>{dateStr(invoice.invoiceDate)}</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{dateStr(invoice.invoiceDate)}</Text>
               </View>
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Instrument Type:</Text>
-                <Text style={styles.metaVal}>{invoice.typeOfInstrument || "Weighing Machine"}</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{invoice.typeOfInstrument || "Automatic Weighing Instrument (AWI)"}</Text>
               </View>
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Accuracy Class:</Text>
-                <Text style={styles.metaVal}>{invoice.accuracyClass || "class III"}</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{invoice.accuracyClass || "class III"}</Text>
               </View>
+              {invoice.make ? (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Make:</Text>
+                  <Text style={[styles.metaVal, styles.bold]}>{invoice.make}</Text>
+                </View>
+              ) : null}
             </View>
 
             <View style={styles.metaColRight}>
               <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Firm Name:</Text>
+                <Text style={styles.metaLabel}>Firm Name:-</Text>
                 <Text style={[styles.metaVal, styles.bold]}>{clientName}</Text>
               </View>
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Contact Person:</Text>
-                <Text style={styles.metaVal}>{proprietorName}</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{proprietorName}</Text>
               </View>
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Address:</Text>
-                <Text style={styles.metaVal}>{address}</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{address}</Text>
               </View>
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Mobile / GSTIN:</Text>
-                <Text style={styles.metaVal}>{mobile} / {gstin}</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{mobile} / {gstin}</Text>
               </View>
             </View>
           </View>
 
-          {/* Redesigned Key Table (Yellow Background with dotted interior borders as shown in Image 3/4) */}
+          {/* Key Table (Yellow Background with dotted interior borders as shown in Image 3/4) */}
           <View style={styles.yellowSection}>
             <View style={styles.tableHeaderRow}>
               <Text style={[styles.tableHeaderCell, { width: "5%" }]}>S.NO</Text>
               <Text style={[styles.tableHeaderCell, { width: "24%" }]}>Location of the weights/ measures</Text>
               <Text style={[styles.tableHeaderCell, { width: "41%" }]}>Details of weights/measures/weighing/Measuring instruments</Text>
-              <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Verif. Fee Rs.</Text>
+              <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Verification Fee Rs.</Text>
               <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Charges Rs.</Text>
               <Text style={[styles.tableHeaderCell, { width: "10%", borderRightWidth: 0 }]}>Total Fee Rs.</Text>
             </View>
@@ -375,11 +450,10 @@ export function InvoicePdfDocument({ invoice }: { invoice: InvoiceWithItems }) {
             {invoice.items && invoice.items.length > 0 ? (
               invoice.items.map((item, idx) => {
                 const parsed = parseItemDetails(item.description);
-                const charges = invoice.cgstAmount + invoice.sgstAmount;
 
                 return (
                   <View key={idx} style={styles.tableBodyRow}>
-                    <Text style={[styles.tableBodyCell, { width: "5%", textAlign: "center" }]}>{idx + 1}</Text>
+                    <Text style={[styles.tableBodyCell, { width: "5%", textAlign: "center", fontWeight: 700 }]}>{idx + 1}</Text>
 
                     <Text style={[styles.tableBodyCell, { width: "24%" }]}>
                       <Text style={styles.specBold}>{parsed.mainTitle}</Text>
@@ -387,53 +461,92 @@ export function InvoicePdfDocument({ invoice }: { invoice: InvoiceWithItems }) {
 
                     <View style={[styles.tableBodyCell, { width: "41%" }]}>
                       {parsed.details.length > 0 ? (
-                        parsed.details.map((detail, dIdx) => (
-                          <Text key={dIdx} style={styles.specLine}>• {detail}</Text>
-                        ))
+                        parsed.details.map((detail, dIdx) => {
+                          const colonIdx = detail.indexOf(":");
+                          if (colonIdx !== -1) {
+                            const label = detail.substring(0, colonIdx + 1);
+                            const val = detail.substring(colonIdx + 1);
+                            return (
+                              <Text key={dIdx} style={styles.specLine}>
+                                <Text style={styles.specBold}>{label}</Text>
+                                {val}
+                              </Text>
+                            );
+                          }
+                          return <Text key={dIdx} style={styles.specLine}>{detail}</Text>;
+                        })
                       ) : (
                         <>
-                          <Text style={styles.specLine}>• Denomination/Capacity: {invoice.capacity || item.description}</Text>
-                          <Text style={styles.specLine}>• Quantity: {item.quantity} {item.unit}</Text>
-                          {invoice.make ? <Text style={styles.specLine}>• Make: {invoice.make}</Text> : null}
-                          {invoice.model ? <Text style={styles.specLine}>• Model: {invoice.model}</Text> : null}
-                          {invoice.accuracyClass ? <Text style={styles.specLine}>• Class: {invoice.accuracyClass}</Text> : null}
-                          {invoice.serialNumber ? <Text style={styles.specLine}>• Serial No: {invoice.serialNumber}</Text> : null}
+                          {invoice.make ? <Text style={styles.specLine}><Text style={styles.specBold}>Make: </Text>{invoice.make}</Text> : null}
+                          <Text style={styles.specLine}><Text style={styles.specBold}>Capacity: </Text>{invoice.capacity || item.description}</Text>
+                          <Text style={styles.specLine}><Text style={styles.specBold}>Quantity: </Text>{item.quantity} {item.unit}</Text>
+                          {invoice.model ? <Text style={styles.specLine}><Text style={styles.specBold}>Model: </Text>{invoice.model}</Text> : null}
+                          {invoice.accuracyClass ? <Text style={styles.specLine}><Text style={styles.specBold}>Class: </Text>{invoice.accuracyClass}</Text> : null}
+                          {invoice.serialNumber ? <Text style={styles.specLine}><Text style={styles.specBold}>Serial No: </Text>{invoice.serialNumber}</Text> : null}
                         </>
                       )}
                     </View>
 
-                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right" }]}>{money(invoice.subtotal || item.rate)}</Text>
-                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right" }]}>{money(charges)}</Text>
-                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", borderRightWidth: 0 }]}>
-                      {money(invoice.totalAmount || item.amount)}
+                    {/* Verification Fee = pre-tax service fee */}
+                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700 }]}>
+                      {money(item.rate)}
+                    </Text>
+
+                    {/* Charges = CGST + SGST breakdown */}
+                    <View style={[styles.tableBodyCell, { width: "10%" }]}>
+                      {(() => {
+                        const tb = taxBreakdown(item.rate, item.taxRate);
+                        if (item.taxRate > 0) {
+                          return (
+                            <>
+                              <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>Svc:{money(tb.svc)}</Text>
+                              <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>CGST:{money(tb.cgst)}</Text>
+                              <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>SGST:{money(tb.sgst)}</Text>
+                            </>
+                          );
+                        }
+                        return <Text style={{ textAlign: "right" }}>{money(0)}</Text>;
+                      })()}
+                    </View>
+
+                    {/* Total Fee = service fee + GST */}
+                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700, borderRightWidth: 0 }]}>
+                      {money(item.amount || taxBreakdown(item.rate, item.taxRate).total)}
                     </Text>
                   </View>
                 );
               })
             ) : (
               <View style={styles.tableBodyRow}>
-                <Text style={[styles.tableBodyCell, { width: "5%", textAlign: "center" }]}>1</Text>
+                <Text style={[styles.tableBodyCell, { width: "5%", textAlign: "center", fontWeight: 700 }]}>1</Text>
                 <Text style={[styles.tableBodyCell, { width: "24%" }]}>
-                  <Text style={styles.specBold}>{invoice.typeOfInstrument || "Weighing Machine"}</Text>
+                  <Text style={styles.specBold}>{invoice.typeOfInstrument || "Automatic Weighing Instrument (AWI)"}</Text>
                 </Text>
                 <View style={[styles.tableBodyCell, { width: "41%" }]}>
-                  <Text style={styles.specLine}>• Capacity: {invoice.capacity || "-"}</Text>
-                  <Text style={styles.specLine}>• Model: {invoice.model || "-"}</Text>
-                  <Text style={styles.specLine}>• Class: {invoice.accuracyClass || "-"}</Text>
-                  <Text style={styles.specLine}>• Serial No: {invoice.serialNumber || "-"}</Text>
+                  <Text style={styles.specLine}><Text style={styles.specBold}>Capacity: </Text>{invoice.capacity || "-"}</Text>
+                  <Text style={styles.specLine}><Text style={styles.specBold}>Model: </Text>{invoice.model || "-"}</Text>
+                  <Text style={styles.specLine}><Text style={styles.specBold}>Class: </Text>{invoice.accuracyClass || "-"}</Text>
+                  <Text style={styles.specLine}><Text style={styles.specBold}>Serial No: </Text>{invoice.serialNumber || "-"}</Text>
                 </View>
-                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right" }]}>{money(invoice.subtotal)}</Text>
-                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right" }]}>{money(invoice.cgstAmount + invoice.sgstAmount)}</Text>
-                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
+                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700 }]}>{money(invoice.subtotal)}</Text>
+                <View style={[styles.tableBodyCell, { width: "10%" }]}>
+                  <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>Svc:{money(invoice.subtotal)}</Text>
+                  <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>CGST:{money(invoice.cgstAmount)}</Text>
+                  <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>SGST:{money(invoice.sgstAmount)}</Text>
+                </View>
+                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700, borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
               </View>
             )}
 
             {/* Total Summary Row */}
             <View style={styles.totalRow}>
-              <Text style={[styles.totalCell, { width: "70%", textAlign: "right" }]}>Total</Text>
+              <Text style={[styles.totalCell, { width: "70%", textAlign: "center", fontSize: 11 }]}>Total</Text>
               <Text style={[styles.totalCell, { width: "10%", textAlign: "right" }]}>{money(invoice.subtotal)}</Text>
-              <Text style={[styles.totalCell, { width: "10%", textAlign: "right" }]}>{money(invoice.cgstAmount + invoice.sgstAmount)}</Text>
-              <Text style={[styles.totalCell, { width: "10%", textAlign: "right", borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
+              <View style={[styles.totalCell, { width: "10%" }]}>
+                <Text style={[{ fontSize: 7.5, textAlign: "right", color: "#000000", fontWeight: 700 }]}>CGST:{money(invoice.cgstAmount)}</Text>
+                <Text style={[{ fontSize: 7.5, textAlign: "right", color: "#000000", fontWeight: 700 }]}>SGST:{money(invoice.sgstAmount)}</Text>
+              </View>
+              <Text style={[styles.totalCell, { width: "10%", textAlign: "right", fontSize: 11, borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
             </View>
           </View>
 
@@ -448,15 +561,35 @@ export function InvoicePdfDocument({ invoice }: { invoice: InvoiceWithItems }) {
           <View style={styles.footerSignatures}>
             <View style={styles.signBlock}>
               {invoice.customerSignature ? <Image src={invoice.customerSignature} style={styles.signatureImage} /> : <View style={{ height: 40 }} />}
-              <Text style={styles.bold}>Customer Signature</Text>
+              <Text style={[styles.bold, { fontSize: 9.5 }]}>Customer Signature</Text>
             </View>
 
             <View style={styles.signBlock}>
               {invoice.authorizedSignatureSnapshot ? (
                 <Image src={invoice.authorizedSignatureSnapshot} style={styles.signatureImage} />
               ) : <View style={{ height: 40 }} />}
-              <Text style={styles.bold}>{invoice.authorizedSignatoryName || "Vishwakarma Services"}</Text>
-              <Text style={{ fontSize: 7.5, marginTop: 1 }}>Inspector Legal Metrology</Text>
+              <Text style={[styles.bold, { fontSize: 9.5 }]}>{invoice.authorizedSignatoryName || "Gottimukkala Shyam Sunder"}</Text>
+              <Text style={{ fontSize: 8.5, marginTop: 1, fontWeight: 700 }}>Principal Officer</Text>
+            </View>
+          </View>
+
+          {/* Checklist Photos – always rendered as styled placeholder boxes */}
+          <View style={styles.checklistSection}>
+            <Text style={styles.checklistSectionTitle}>Checklist Photos</Text>
+            <View style={styles.checklistPhotoRow}>
+              {(['Calibration', 'Stamp & Seal'] as const).map((label, i) => {
+                const photo = checklistPhotos?.find(p => p.label === label);
+                return (
+                  <View key={i} style={[styles.checklistPhotoBox, i === 1 ? { borderRightWidth: 0 } : {}]}>
+                    <Text style={styles.checklistPhotoLabel}>{label}</Text>
+                    {photo ? (
+                      <Image src={photo.dataUrl} style={styles.checklistPhotoImg} />
+                    ) : (
+                      <View style={styles.checklistPhotoEmpty} />
+                    )}
+                  </View>
+                );
+              })}
             </View>
           </View>
         </View>
@@ -465,6 +598,6 @@ export function InvoicePdfDocument({ invoice }: { invoice: InvoiceWithItems }) {
   );
 }
 
-export async function renderInvoicePdf(invoice: InvoiceWithItems) {
-  return renderToBuffer(<InvoicePdfDocument invoice={invoice} />);
+export async function renderInvoicePdf(invoice: InvoiceWithItems, checklistPhotos?: ChecklistPhoto[]) {
+  return renderToBuffer(<InvoicePdfDocument invoice={invoice} checklistPhotos={checklistPhotos} />);
 }

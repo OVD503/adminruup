@@ -11,7 +11,7 @@ export async function GET() {
   const setting = await prisma.signatureSetting.findUnique({ where: { adminUserId: session.id } });
 
   return NextResponse.json({
-    signatoryName: setting?.signatoryName || "Vishwakarma Services",
+    signatoryName: setting?.signatoryName || "Gottimukkala Shyam Sunder",
     signatureImageUrl: setting?.signatureImageUrl || null,
   });
 }

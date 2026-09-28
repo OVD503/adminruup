@@ -72,7 +72,7 @@ export function SignatureSettings({ adminId }: { adminId: string }) {
                     Signatory Name
                   </p>
                   <p className="text-sm font-semibold text-slate-900">
-                    {data.signatoryName || "Vishwakarma Services"}
+                    {data.signatoryName || "Gottimukkala Shyam Sunder"}
                   </p>
                 </div>
 

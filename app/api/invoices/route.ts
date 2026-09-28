@@ -50,12 +50,13 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const parsed = invoiceInputSchema.safeParse(body);
+    const { checklistPhotos, ...invoiceBody } = body;
+    const parsed = invoiceInputSchema.safeParse(invoiceBody);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid invoice data.", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const invoice = await createGeneratedInvoice(parsed.data, session);
+    const invoice = await createGeneratedInvoice(parsed.data, session, checklistPhotos);
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {
     console.error("Invoice creation error:", error);
