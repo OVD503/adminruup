@@ -21,15 +21,15 @@ export const invoiceInputSchema = z.object({
   status: z.enum(["DRAFT", "GENERATED"]).default("GENERATED"),
   invoiceDate: z.coerce.date(),
   firmType: nullableString,
-  firmName: z.string().trim().min(1, "Firm Name is required."),
-  doorNo: z.string().trim().min(1, "Door no is required."),
-  street: z.string().trim().min(1, "Street is required."),
-  locality: z.string().trim().min(1, "Locality is required."),
-  pinCode: z.string().trim().min(1, "Pin Code is required."),
-  contactPersonName: z.string().trim().min(1, "Contact person Name is required."),
-  contactPersonNumber: z.string().trim().min(1, "Contact person Number is required."),
+  firmName: nullableString,
+  doorNo: nullableString,
+  street: nullableString,
+  locality: nullableString,
+  pinCode: nullableString,
+  contactPersonName: nullableString,
+  contactPersonNumber: nullableString,
   personUniqueNumberType: nullableString,
-  personUniqueNumber: z.string().trim().min(1, "Person Unique Number is required."),
+  personUniqueNumber: nullableString,
   proprietorSalutation: nullableString,
   proprietorName: nullableString,
   relationType: nullableString,
@@ -49,8 +49,10 @@ export const invoiceInputSchema = z.object({
   serialNumber: nullableString,
   accuracyClass: nullableString,
   modelApprovalNumber: nullableString,
+  categoryOfWM: nullableString,
+  certificateValidityYears: nullableString,
   customerSignature: nullableString,
-  items: z.array(invoiceItemInputSchema).min(1, "At least one invoice item is required.")
+  items: z.array(invoiceItemInputSchema).optional().default([])
 });
 
 export const signatureSettingInputSchema = z.object({

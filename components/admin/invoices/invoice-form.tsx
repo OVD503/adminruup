@@ -30,17 +30,55 @@ interface FeeCalculationRow {
   type: string;
   subType: string;
   extraInputs: string;
+  noOfMachines?: string;
+  maxValue?: string;
+  minValue?: string;
+  eValue?: string;
+  model?: string;
+  machineCategory?: string;
+  accuracyClass?: string;
   denomination: string;
   quantity: number;
   isNewArticle: string;
   intimationForDismantling: string;
   permissionToSell: string;
   verificationFee: number;
+  feePreset?: string;
+  cgst?: number;
+  sgst?: number;
+  serviceFee?: number;
   situ: number;
   dueFee: number;
   cc: number;
   additionalFee: number;
 }
+
+const MAX_TO_MIN_MAP: Record<string, { min: string; e: string }[]> = {
+  "10": [
+    { min: "20", e: "1" },
+    { min: "40", e: "2" }
+  ],
+  "20": [
+    { min: "20", e: "1" },
+    { min: "40", e: "2" },
+    { min: "100", e: "5" }
+  ],
+  "30": [
+    { min: "100", e: "5" }
+  ],
+  "50": [
+    { min: "100", e: "5" },
+    { min: "200", e: "10" }
+  ],
+  "100": [
+    { min: "200", e: "10" },
+    { min: "300", e: "15" },
+    { min: "400", e: "20" }
+  ],
+  "150": [
+    { min: "400", e: "20" }
+  ]
+};
 
 const emptyItem = {
   description: "",
@@ -64,6 +102,8 @@ export function InvoiceForm() {
   const [serviceType, setServiceType] = useState("");
   const [saving, setSaving] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<{ pdfUrl?: string | null; invoiceNumber?: string } | null>(null);
+  const [serviceReportStatus, setServiceReportStatus] = useState("");
+  const [whatChangedDetails, setWhatChangedDetails] = useState("");
 
   const form = useForm<InvoiceInput>({
     resolver: zodResolver(invoiceInputSchema) as any,
@@ -100,8 +140,10 @@ export function InvoiceForm() {
       serialNumber: "",
       accuracyClass: "",
       modelApprovalNumber: "",
+      categoryOfWM: "",
+      certificateValidityYears: "",
       customerSignature: "",
-      items: [emptyItem]
+      items: []
     }
   });
 
@@ -113,15 +155,25 @@ export function InvoiceForm() {
   const [feeRows, setFeeRows] = useState<FeeCalculationRow[]>([
     {
       id: "1",
-      type: "Non-Automatic",
-      subType: "Select Sub 1",
+      type: "Select Type",
+      subType: "Select Sub Type",
       extraInputs: "",
+      noOfMachines: "",
+      maxValue: "",
+      minValue: "",
+      eValue: "",
+      model: "",
+      machineCategory: "",
+      accuracyClass: "class III",
       denomination: "Select Denomination",
       quantity: 0,
       isNewArticle: "NO",
       intimationForDismantling: "NO",
       permissionToSell: "NO",
       verificationFee: 0,
+      cgst: 0,
+      sgst: 0,
+      serviceFee: 0,
       situ: 0,
       dueFee: 0,
       cc: 100,
@@ -134,21 +186,112 @@ export function InvoiceForm() {
       ...prev,
       {
         id: String(Date.now()),
-        type: "Non-Automatic",
-        subType: "Select Sub 1",
+        type: "Select Type",
+        subType: "Select Sub Type",
         extraInputs: "",
+        noOfMachines: "",
+        maxValue: "",
+        minValue: "",
+        eValue: "",
+        model: "",
+        machineCategory: "",
+        accuracyClass: "class III",
         denomination: "Select Denomination",
         quantity: 0,
         isNewArticle: "NO",
         intimationForDismantling: "NO",
         permissionToSell: "NO",
         verificationFee: 0,
+        cgst: 0,
+        sgst: 0,
+        serviceFee: 0,
         situ: 0,
         dueFee: 0,
         cc: 0,
         additionalFee: 0
       }
     ]);
+  }
+
+  function getPriceForMax(max: string): number {
+    if (max === "10") return 1000;
+    if (max === "20" || max === "30") return 1100;
+    if (max === "50" || max === "100" || max === "150") return 1200;
+    return 0;
+  }
+
+  function calculateGstBreakdown(totalInclGst: number) {
+    if (!totalInclGst || totalInclGst <= 0) {
+      return { serviceFee: 0, cgst: 0, sgst: 0 };
+    }
+    const serviceFee = Math.round((totalInclGst / 1.18) * 100) / 100;
+    const remainingGst = Math.round((totalInclGst - serviceFee) * 100) / 100;
+    const cgst = Math.round((remainingGst / 2) * 100) / 100;
+    const sgst = Math.round((remainingGst - cgst) * 100) / 100;
+    return { serviceFee, cgst, sgst };
+  }
+
+  function handleMaxChange(index: number, newMax: string) {
+    const options = MAX_TO_MIN_MAP[newMax] || [];
+    const defaultOption = options[0];
+    const autoPrice = getPriceForMax(newMax);
+    const gstBreakdown = calculateGstBreakdown(autoPrice);
+
+    setFeeRows((prev) => {
+      const copy = [...prev];
+      const currentRow = copy[index];
+      const matchingMin = options.find((opt) => opt.min === currentRow.minValue);
+      const selectedMin = matchingMin ? matchingMin.min : (defaultOption ? defaultOption.min : "");
+      const selectedE = matchingMin ? matchingMin.e : (defaultOption ? defaultOption.e : "");
+      copy[index] = {
+        ...currentRow,
+        maxValue: newMax,
+        minValue: selectedMin,
+        eValue: selectedE,
+        feePreset: autoPrice ? String(autoPrice) : "Other",
+        serviceFee: gstBreakdown.serviceFee,
+        cgst: gstBreakdown.cgst,
+        sgst: gstBreakdown.sgst
+      };
+      return copy;
+    });
+  }
+
+  function handlePresetChange(index: number, preset: string) {
+    setFeeRows((prev) => {
+      const copy = [...prev];
+      const currentRow = copy[index];
+      if (preset === "Other") {
+        copy[index] = { ...currentRow, feePreset: "Other" };
+      } else {
+        const amount = Number(preset) || 0;
+        const gstBreakdown = calculateGstBreakdown(amount);
+        copy[index] = {
+          ...currentRow,
+          feePreset: preset,
+          serviceFee: gstBreakdown.serviceFee,
+          cgst: gstBreakdown.cgst,
+          sgst: gstBreakdown.sgst
+        };
+      }
+      return copy;
+    });
+  }
+
+  function handleMinChange(index: number, newMin: string) {
+    setFeeRows((prev) => {
+      const copy = [...prev];
+      const currentRow = copy[index];
+      const options = MAX_TO_MIN_MAP[currentRow.maxValue || ""] || [];
+      const matchingOpt = options.find((opt) => opt.min === newMin);
+      const selectedE = matchingOpt ? matchingOpt.e : "";
+      copy[index] = {
+        ...currentRow,
+        minValue: newMin,
+        eValue: selectedE
+      };
+      return copy;
+    });
   }
 
   function deleteFeeRow() {
@@ -173,10 +316,9 @@ export function InvoiceForm() {
       feeRows.reduce(
         (acc, row) =>
           acc +
-          (Number(row.situ) || 0) +
-          (Number(row.dueFee) || 0) +
-          (Number(row.cc) || 0) +
-          (Number(row.additionalFee) || 0),
+          (Number(row.cgst) || 0) +
+          (Number(row.sgst) || 0) +
+          (Number(row.serviceFee) || 0),
         0
       ),
     [feeRows]
@@ -227,14 +369,62 @@ export function InvoiceForm() {
     if (matching.length) replace(matching.map(itemFromProduct));
   }
 
+  function onInvalid(errors: any) {
+    console.error("Form validation errors:", errors);
+    const keys = Object.keys(errors);
+    if (keys.length > 0) {
+      toast.error(`Form validation issue: ${keys.join(", ")}`);
+    }
+  }
+
   async function submit(values: InvoiceInput) {
     setSaving(true);
     setCreatedInvoice(null);
     try {
+      const mappedItems = feeRows.map((row) => {
+        const totalRowPrice =
+          (Number(row.serviceFee) || 0) +
+          (Number(row.cgst) || 0) +
+          (Number(row.sgst) || 0) +
+          (Number(row.verificationFee) || 0);
+
+        const detailsList = [
+          row.subType && row.subType !== "Select Sub Type" ? `Sub-Type: ${row.subType}` : "",
+          row.noOfMachines ? `No. of Machines: ${row.noOfMachines}` : "",
+          row.maxValue ? `Max Value: ${row.maxValue} kg` : "",
+          row.minValue ? `Min Value: ${row.minValue} g` : "",
+          row.eValue ? `e-value: ${row.eValue} g` : "",
+          row.machineCategory ? `Model Type: ${row.machineCategory}` : "",
+          row.model ? `Model: ${row.model}` : "",
+          row.accuracyClass ? `Class: ${row.accuracyClass}` : ""
+        ].filter(Boolean);
+
+        const title = row.type && row.type !== "Select Type" ? row.type : "Weighing Instrument";
+        const description = detailsList.length > 0 ? `${title} — ${detailsList.join(" | ")}` : title;
+
+        return {
+          description,
+          hsnCode: "9986",
+          quantity: Number(row.noOfMachines) || 1,
+          unit: "Job",
+          rate: totalRowPrice || finalFeeToBePaid,
+          taxRate: 0
+        };
+      });
+
+      const firstRow = feeRows[0];
+      const payload = {
+        ...values,
+        typeOfInstrument: firstRow?.type && firstRow.type !== "Select Type" ? firstRow.type : values.typeOfInstrument,
+        capacity: firstRow?.maxValue ? `${firstRow.maxValue} kg` : values.capacity,
+        model: firstRow?.model || values.model,
+        accuracyClass: firstRow?.accuracyClass || values.accuracyClass,
+        items: values.items && values.items.length > 0 ? values.items : mappedItems
+      };
       const response = await fetch("/api/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values)
+        body: JSON.stringify(payload)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to generate invoice.");
@@ -272,7 +462,7 @@ export function InvoiceForm() {
         </div>
       </header>
 
-      <form id="invoice-form" onSubmit={form.handleSubmit(submit)} className="w-full max-w-full space-y-6 px-1 sm:px-2 py-6">
+      <form id="invoice-form" onSubmit={form.handleSubmit(submit, onInvalid)} className="w-full max-w-full space-y-6 px-1 sm:px-2 py-6">
         <div className="space-y-6">
           {createdInvoice ? (
             <Card className="border-emerald-200 bg-emerald-50">
@@ -328,32 +518,6 @@ export function InvoiceForm() {
                 </Field>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-800">Person Unique Number: *</Label>
-                <div className="flex flex-col sm:flex-row gap-3 items-center">
-                  <select
-                    className="h-10 w-full sm:w-64 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                    {...form.register("personUniqueNumberType")}
-                  >
-                    <option value="">--Select Person Unique Number--</option>
-                    <option value="GSTIN">GSTIN</option>
-                    <option value="Aadhaar Number">Aadhaar Number</option>
-                    <option value="PAN Number">PAN Number</option>
-                    <option value="Trade License No">Trade License No</option>
-                    <option value="Udyam Reg No">Udyam Reg No</option>
-                    <option value="Other ID">Other ID</option>
-                  </select>
-                  <div className="w-full sm:w-72">
-                    <Input
-                      placeholder="Enter Unique Number"
-                      {...form.register("personUniqueNumber")}
-                    />
-                  </div>
-                </div>
-                {form.formState.errors.personUniqueNumber?.message && (
-                  <p className="text-xs text-red-600">{form.formState.errors.personUniqueNumber.message}</p>
-                )}
-              </div>
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-sm font-medium text-slate-600">Invoice Date:</span>
@@ -390,32 +554,6 @@ export function InvoiceForm() {
                   </div>
                 </Field>
 
-                <Field label="Relation Details: *">
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <select
-                        className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                        {...form.register("relationType")}
-                      >
-                        <option value="S/O">S/O</option>
-                        <option value="D/O">D/O</option>
-                        <option value="W/O">W/O</option>
-                        <option value="C/O">C/O</option>
-                      </select>
-                      <select
-                        className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
-                        {...form.register("relativeSalutation")}
-                      >
-                        <option value="Mr.">Mr.</option>
-                        <option value="Mrs.">Mrs.</option>
-                        <option value="Late">Late</option>
-                        <option value="Shri">Shri</option>
-                        <option value="Smt.">Smt.</option>
-                      </select>
-                    </div>
-                    <Input placeholder="Enter Relation Name" {...form.register("relativeName")} />
-                  </div>
-                </Field>
 
                 <Field label="Contact Number: *">
                   <Input placeholder="Enter Contact Number" {...form.register("proprietorContactNumber")} />
@@ -446,7 +584,7 @@ export function InvoiceForm() {
                   <tbody className="divide-y divide-slate-200 text-slate-800">
                     <tr className="bg-white hover:bg-slate-50/50">
                       <td className="py-2.5 px-4 text-center font-medium">1</td>
-                      <td className="py-2.5 px-4 font-medium text-slate-700">Copy of model approval(if applicable)</td>
+                      <td className="py-2.5 px-4 font-medium text-slate-700">Calibration</td>
                       <td className="py-2.5 px-4 text-center">
                         <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer" />
                       </td>
@@ -460,7 +598,7 @@ export function InvoiceForm() {
                     </tr>
                     <tr className="bg-slate-50/60 hover:bg-slate-50">
                       <td className="py-2.5 px-4 text-center font-medium">2</td>
-                      <td className="py-2.5 px-4 font-medium text-slate-700">Verification certificate (if new invoice to that effect)</td>
+                      <td className="py-2.5 px-4 font-medium text-slate-700">Stamp & Seal</td>
                       <td className="py-2.5 px-4 text-center">
                         <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer" />
                       </td>
@@ -474,30 +612,66 @@ export function InvoiceForm() {
                     </tr>
                     <tr className="bg-white hover:bg-slate-50/50">
                       <td className="py-2.5 px-4 text-center font-medium">3</td>
-                      <td className="py-2.5 px-4 font-medium text-slate-700">Service Report(if repaired by RL/ML)</td>
+                      <td className="py-2.5 px-4 font-medium text-slate-700">Service Report(if repaired by GATC)</td>
                       <td className="py-2.5 px-4 text-center">
-                        <select className="h-8 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400">
+                        <select
+                          className="h-8 w-full rounded border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                          value={serviceReportStatus}
+                          onChange={(e) => setServiceReportStatus(e.target.value)}
+                        >
                           <option value="">-- Select --</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
                           <option value="Service Needed">Service Needed</option>
                           <option value="Service Not Needed">Service Not Needed</option>
                         </select>
                       </td>
                       <td className="py-2.5 px-4">
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border file:border-slate-300 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
-                        />
+                        {(serviceReportStatus === "Yes" || serviceReportStatus === "Service Needed") && (
+                          <Input
+                            type="text"
+                            placeholder="What changed"
+                            className="h-8 text-xs w-full bg-white border-slate-200 focus:border-slate-400"
+                            value={whatChangedDetails}
+                            onChange={(e) => setWhatChangedDetails(e.target.value)}
+                          />
+                        )}
                       </td>
-                    </tr>
-                    <tr className="bg-slate-50/60 hover:bg-slate-50">
-                      <td className="py-2.5 px-4 text-center font-medium">4</td>
-                      <td className="py-2.5 px-4 font-medium text-slate-700">Test conducted report</td>
-                      <td className="py-2.5 px-4 text-center"></td>
-                      <td className="py-2.5 px-4"></td>
                     </tr>
                   </tbody>
                 </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden border-slate-200 shadow-soft">
+            <CardContent className="p-4 bg-white">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700">Category of WM: *</Label>
+                  <select
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    {...form.register("categoryOfWM")}
+                  >
+                    <option value="">--Select Category of WM--</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Ordinary">Ordinary</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700">Certificate Validity in Years: *</Label>
+                  <select
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    {...form.register("certificateValidityYears")}
+                  >
+                    <option value="">--Select Certificate Validity in Years--</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="5">5</option>
+                  </select>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -530,14 +704,10 @@ export function InvoiceForm() {
                     <th className="p-2.5 w-12">SNO<br />(1)</th>
                     <th className="p-2.5 min-w-[130px]">Type<br />(2)</th>
                     <th className="p-2.5 min-w-[130px]">Sub Type<br />(3)</th>
-                    <th className="p-2.5 min-w-[140px]">Extra Inputs<br />(4)</th>
-                    <th className="p-2.5 min-w-[140px]">Denomination<br />(5)</th>
-                    <th className="p-2.5 w-20">Quantity<br />(6)</th>
-                    <th className="p-2.5 w-24">Whether new article?<br />(7)</th>
-                    <th className="p-2.5 min-w-[160px]">Intimation to Controller for dismantling of any weight or measures<br />(8)</th>
-                    <th className="p-2.5 min-w-[160px]">Permission of Legal Metrology Officer to sell of specific goods<br />(9)</th>
-                    <th className="p-2.5 min-w-[120px]">Verification Fee payable in Rs.<br />(10)</th>
-                    <th className="p-2.5 min-w-[180px]">Due Fee / Situ / Conveyance Charges / Additional Charges Rs.<br />(11)</th>
+                    <th className="p-2.5 min-w-[280px]">Extra Inputs<br />(4)</th>
+                    <th className="p-2.5 w-20">Quantity<br />(5)</th>
+                    <th className="p-2.5 w-24">Whether new article?<br />(6)</th>
+                    <th className="p-2.5 min-w-[180px]">CGST / SGST / Service Fee / Total Rs.<br />(7)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white text-slate-800">
@@ -550,11 +720,16 @@ export function InvoiceForm() {
                           onChange={(e) => updateFeeRow(index, "type", e.target.value)}
                           className="w-full h-8 rounded border border-slate-300 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
-                          <option value="Non-Automatic">Non-Automatic</option>
-                          <option value="Automatic">Automatic</option>
-                          <option value="Weights">Weights</option>
-                          <option value="Measures">Measures</option>
-                          <option value="Tank / Vessel">Tank / Vessel</option>
+                          <option value="Select Type">Select Type</option>
+                          <option value="Automatic Weighing Machine">Automatic Weighing Machine</option>
+                          <option value="Non-Automatic weighing instruments, mechanical (analog/dial indicator) / digital belonging to ordinary and medium accuracy class III & IV">
+                            Non-Automatic weighing instruments, mechanical (analog/dial indicator) / digital belonging to ordinary and medium accuracy class III & IV
+                          </option>
+                          <option value="Non-Automatic weighing instruments, of high accuracy class II and special accuracy class I (mechanical and electronics class I & II)">
+                            Non-Automatic weighing instruments, of high accuracy class II and special accuracy class I (mechanical and electronics class I & II)
+                          </option>
+                          <option value="Totalizing Machine">Totalizing Machine</option>
+                          <option value="Automatic Indexing Instruments">Automatic Indexing Instruments</option>
                         </select>
                       </td>
                       <td className="p-2.5">
@@ -563,37 +738,131 @@ export function InvoiceForm() {
                           onChange={(e) => updateFeeRow(index, "subType", e.target.value)}
                           className="w-full h-8 rounded border border-slate-300 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
-                          <option value="Select Sub 1">Select Sub 1</option>
-                          <option value="Select Sub 2">Select Sub 2</option>
-                          <option value="Class I">Class I</option>
-                          <option value="Class II">Class II</option>
-                          <option value="Class III">Class III</option>
-                          <option value="Class IV">Class IV</option>
+                          <option value="Select Sub Type">Select Sub Type</option>
+                          <option value="Electronic">Electronic</option>
+                          <option value="Mechanical">Mechanical</option>
                         </select>
                       </td>
-                      <td className="p-2.5">
-                        <input
-                          type="text"
-                          value={row.extraInputs}
-                          onChange={(e) => updateFeeRow(index, "extraInputs", e.target.value)}
-                          className="w-full h-8 rounded border border-slate-300 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="p-2.5">
-                        <select
-                          value={row.denomination}
-                          onChange={(e) => updateFeeRow(index, "denomination", e.target.value)}
-                          className="w-full h-8 rounded border border-slate-300 bg-white px-2 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          <option value="Select Denomination">Select Denomination</option>
-                          <option value="50 kg">50 kg</option>
-                          <option value="100 kg">100 kg</option>
-                          <option value="500 kg">500 kg</option>
-                          <option value="1 Ton">1 Ton</option>
-                          <option value="5 Ton">5 Ton</option>
-                          <option value="10 Ton">10 Ton</option>
-                          <option value="50 Ton">50 Ton</option>
-                        </select>
+                      <td className="p-2.5 min-w-[280px]">
+                        <div className="space-y-1.5 text-xs text-slate-700 bg-slate-50/50 p-2 rounded border border-slate-200">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">No. of Machines under Verification:</span>
+                            <input
+                              type="text"
+                              value={row.noOfMachines || ""}
+                              onChange={(e) => updateFeeRow(index, "noOfMachines", e.target.value)}
+                              className="w-20 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                              placeholder="Qty"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Max value:</span>
+                            <div className="flex items-center gap-1">
+                              <select
+                                value={row.maxValue || ""}
+                                onChange={(e) => handleMaxChange(index, e.target.value)}
+                                className="w-20 h-7 rounded border border-slate-300 px-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                              >
+                                <option value="">-- Select --</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="150">150</option>
+                              </select>
+                              <span className="text-[11px] text-slate-500 font-medium">kg</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Min value:</span>
+                            <div className="flex items-center gap-1">
+                              <select
+                                value={row.minValue || ""}
+                                onChange={(e) => handleMinChange(index, e.target.value)}
+                                disabled={!row.maxValue}
+                                className="w-20 h-7 rounded border border-slate-300 px-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white disabled:bg-slate-100"
+                              >
+                                <option value="">-- Select --</option>
+                                {(MAX_TO_MIN_MAP[row.maxValue || ""] || []).map((opt) => (
+                                  <option key={opt.min} value={opt.min}>
+                                    {opt.min}
+                                  </option>
+                                ))}
+                              </select>
+                              <span className="text-[11px] text-slate-500 font-medium">g</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">e-value:</span>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                readOnly
+                                value={row.eValue || ""}
+                                className="w-20 h-7 rounded border border-slate-300 px-1.5 text-xs bg-slate-100 text-slate-700 font-medium text-center"
+                                placeholder="Auto"
+                              />
+                              <span className="text-[11px] text-slate-500 font-medium">g</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Model Type:</span>
+                            <select
+                              value={row.machineCategory || ""}
+                              onChange={(e) => updateFeeRow(index, "machineCategory", e.target.value)}
+                              className="w-24 h-7 rounded border border-slate-300 px-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                            >
+                              <option value="">-- Select --</option>
+                              <option value="TT">Tabletop (TT)</option>
+                              <option value="PF">Platform (PF)</option>
+                              <option value="CR">Crane (CR)</option>
+                            </select>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Model:</span>
+                            <input
+                              type="text"
+                              value={row.model || ""}
+                              onChange={(e) => updateFeeRow(index, "model", e.target.value)}
+                              className="w-20 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                              placeholder="Enter Model"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                            <span className="text-[11px] font-medium text-slate-600">Class:</span>
+                            <div className="flex items-center gap-2">
+                              <label className="flex items-center gap-1 cursor-pointer text-[11px] text-slate-700">
+                                <input
+                                  type="radio"
+                                  name={`class-${row.id}`}
+                                  value="class III"
+                                  checked={row.accuracyClass === "class III" || !row.accuracyClass}
+                                  onChange={(e) => updateFeeRow(index, "accuracyClass", e.target.value)}
+                                  className="h-3 w-3 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                />
+                                class III
+                              </label>
+                              <label className="flex items-center gap-1 cursor-pointer text-[11px] text-slate-700">
+                                <input
+                                  type="radio"
+                                  name={`class-${row.id}`}
+                                  value="class IV"
+                                  checked={row.accuracyClass === "class IV"}
+                                  onChange={(e) => updateFeeRow(index, "accuracyClass", e.target.value)}
+                                  className="h-3 w-3 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                />
+                                class IV
+                              </label>
+                            </div>
+                          </div>
+                        </div>
                       </td>
                       <td className="p-2.5">
                         <input
@@ -614,75 +883,65 @@ export function InvoiceForm() {
                           <option value="YES">YES</option>
                         </select>
                       </td>
-                      <td className="p-2.5">
-                        <select
-                          value={row.intimationForDismantling}
-                          onChange={(e) => updateFeeRow(index, "intimationForDismantling", e.target.value)}
-                          className="w-full h-8 rounded border border-slate-300 bg-white px-2 text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          <option value="NO">NO</option>
-                          <option value="YES">YES</option>
-                        </select>
-                      </td>
-                      <td className="p-2.5">
-                        <select
-                          value={row.permissionToSell}
-                          onChange={(e) => updateFeeRow(index, "permissionToSell", e.target.value)}
-                          className="w-full h-8 rounded border border-slate-300 bg-white px-2 text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          <option value="NO">NO</option>
-                          <option value="YES">YES</option>
-                        </select>
-                      </td>
-                      <td className="p-2.5">
-                        <input
-                          type="number"
-                          min="0"
-                          value={row.verificationFee}
-                          onChange={(e) => updateFeeRow(index, "verificationFee", Number(e.target.value))}
-                          className="w-full h-8 rounded border border-slate-300 px-2 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="p-2.5 space-y-1 text-[11px]">
+                      <td className="p-2.5 space-y-1.5 text-[11px]">
                         <div className="flex items-center justify-between gap-1">
-                          <span className="text-slate-600 font-medium">Situ:</span>
+                          <span className="text-slate-600 font-medium">Fee Preset:</span>
+                          <select
+                            value={row.feePreset || ""}
+                            onChange={(e) => handlePresetChange(index, e.target.value)}
+                            className="w-24 h-6 rounded border border-slate-300 px-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                          >
+                            <option value="">-- Select --</option>
+                            <option value="1000">₹1,000 (10kg)</option>
+                            <option value="1100">₹1,100 (20-30kg)</option>
+                            <option value="1200">₹1,200 (50-150kg)</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-slate-600 font-medium">Service fee:</span>
                           <input
                             type="number"
                             min="0"
-                            value={row.situ}
-                            onChange={(e) => updateFeeRow(index, "situ", Number(e.target.value))}
-                            className="w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            step="0.01"
+                            readOnly={row.feePreset !== "Other"}
+                            value={row.serviceFee ?? 0}
+                            onChange={(e) => updateFeeRow(index, "serviceFee", Number(e.target.value))}
+                            className={`w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ${row.feePreset !== "Other" ? "bg-slate-100 text-slate-700" : "bg-white"
+                              }`}
                           />
                         </div>
                         <div className="flex items-center justify-between gap-1">
-                          <span className="text-slate-600 font-medium">Due Fee:</span>
+                          <span className="text-slate-600 font-medium">CGST (9%):</span>
                           <input
                             type="number"
                             min="0"
-                            value={row.dueFee}
-                            onChange={(e) => updateFeeRow(index, "dueFee", Number(e.target.value))}
-                            className="w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            step="0.01"
+                            readOnly={row.feePreset !== "Other"}
+                            value={row.cgst ?? 0}
+                            onChange={(e) => updateFeeRow(index, "cgst", Number(e.target.value))}
+                            className={`w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ${row.feePreset !== "Other" ? "bg-slate-100 text-slate-700" : "bg-white"
+                              }`}
                           />
                         </div>
                         <div className="flex items-center justify-between gap-1">
-                          <span className="text-slate-600 font-medium">CC:</span>
+                          <span className="text-slate-600 font-medium">SGST (9%):</span>
                           <input
                             type="number"
                             min="0"
-                            value={row.cc}
-                            onChange={(e) => updateFeeRow(index, "cc", Number(e.target.value))}
-                            className="w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            step="0.01"
+                            readOnly={row.feePreset !== "Other"}
+                            value={row.sgst ?? 0}
+                            onChange={(e) => updateFeeRow(index, "sgst", Number(e.target.value))}
+                            className={`w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ${row.feePreset !== "Other" ? "bg-slate-100 text-slate-700" : "bg-white"
+                              }`}
                           />
                         </div>
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-slate-600 font-medium">Additional Fee:</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={row.additionalFee}
-                            onChange={(e) => updateFeeRow(index, "additionalFee", Number(e.target.value))}
-                            className="w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          />
+                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-200">
+                          <span className="text-slate-800 font-bold">Total:</span>
+                          <span className="w-20 text-right font-bold text-slate-800 text-xs">
+                            {((Number(row.serviceFee) || 0) + (Number(row.cgst) || 0) + (Number(row.sgst) || 0)).toFixed(2)}
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -737,57 +996,7 @@ export function InvoiceForm() {
             </button>
           </div>
 
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <div><CardTitle>Line Items</CardTitle><CardDescription>Amounts recalculate instantly from quantity and rate.</CardDescription></div>
-              <Button type="button" onClick={() => append(emptyItem)}><Plus className="h-4 w-4" /> Add Item</Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-2">
-                {serviceTypes.length > 0 && (
-                  <Field label="Package / Service Type">
-                    <select className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800" value={serviceType} onChange={(event) => applyServiceType(event.target.value)}>
-                      <option value="">Select package type to populate items...</option>
-                      {serviceTypes.map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </Field>
-                )}
-                <Field label="Add Predefined Item">
-                  <select className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800" onChange={(event) => { applyService(event.target.value); event.currentTarget.value = ""; }}>
-                    <option value="">Add predefined single item row...</option>
-                    {products.map((product) => <option key={product.id} value={product.id}>{product.type} - {product.name}</option>)}
-                  </select>
-                </Field>
-              </div>
-              {fields.map((field, index) => (
-                <div key={field.id} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[2fr_100px_90px_90px_110px_90px_44px]">
-                  <Input placeholder="Item / Service Description" {...form.register(`items.${index}.description`)} />
-                  <Input placeholder="HSN" {...form.register(`items.${index}.hsnCode`)} />
-                  <Input type="number" step="0.001" placeholder="Qty" {...form.register(`items.${index}.quantity`, { valueAsNumber: true })} />
-                  <Input placeholder="Unit" {...form.register(`items.${index}.unit`)} />
-                  <Input type="number" step="0.01" placeholder="Rate" {...form.register(`items.${index}.rate`, { valueAsNumber: true })} />
-                  <Input type="number" step="0.01" placeholder="Tax %" {...form.register(`items.${index}.taxRate`, { valueAsNumber: true })} />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => fields.length > 1 && remove(index)}><Trash2 className="h-4 w-4" /></Button>
-                  <div className="text-sm font-semibold text-slate-600 md:col-span-7">Amount: {money(totals.items[index]?.amount || 0)}</div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Instrument Details</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <Field label="Type of Instrument"><Input {...form.register("typeOfInstrument")} /></Field>
-              <Field label="Capacity"><Input {...form.register("capacity")} /></Field>
-              <Field label="Make"><Input {...form.register("make")} /></Field>
-              <Field label="Model"><Input {...form.register("model")} /></Field>
-              <Field label="Serial Number"><Input {...form.register("serialNumber")} /></Field>
-              <Field label="Accuracy Class"><Input {...form.register("accuracyClass")} /></Field>
-              <Field label="Model Approval Number"><Input {...form.register("modelApprovalNumber")} /></Field>
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader><CardTitle>Customer Signature</CardTitle></CardHeader>

@@ -2,7 +2,7 @@ import React from "react";
 import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 
 type InvoiceItem = {
-  id: string;
+  id?: string;
   description: string;
   hsnCode: string | null;
   quantity: number;
@@ -21,6 +21,15 @@ type InvoiceWithItems = {
   clientGstinSnapshot?: string | null;
   clientGSTINSnapshot?: string | null;
   clientMobileSnapshot: string | null;
+  firmType?: string | null;
+  firmName?: string | null;
+  doorNo?: string | null;
+  street?: string | null;
+  locality?: string | null;
+  pinCode?: string | null;
+  contactPersonName?: string | null;
+  contactPersonNumber?: string | null;
+  proprietorName?: string | null;
   typeOfInstrument: string | null;
   capacity: string | null;
   make: string | null;
@@ -31,6 +40,7 @@ type InvoiceWithItems = {
   subtotal: number;
   cgstAmount: number;
   sgstAmount: number;
+  taxAmount: number;
   totalAmount: number;
   customerSignature: string | null;
   authorizedSignatoryName: string | null;
@@ -40,99 +50,187 @@ type InvoiceWithItems = {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 18,
+    padding: 16,
     fontFamily: "Helvetica",
-    fontSize: 9,
-    color: "#111827"
+    fontSize: 8,
+    color: "#0f172a"
   },
   shell: {
-    border: "1 solid #111827",
-    padding: 4,
-    minHeight: "100%"
+    border: "1.5 solid #1e293b",
+    padding: 10,
+    minHeight: "97%"
   },
-  center: {
-    textAlign: "center"
+  headerBox: {
+    textAlign: "center",
+    borderBottom: "1.5 solid #1e293b",
+    paddingBottom: 6,
+    marginBottom: 6
   },
-  companyTitle: {
-    fontSize: 15,
+  govTitle: {
+    fontSize: 13,
     fontWeight: 700,
-    textAlign: "center"
+    letterSpacing: 0.5,
+    textAlign: "center",
+    textTransform: "uppercase"
+  },
+  subTitleText: {
+    fontSize: 7.5,
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 1
+  },
+  gatcNo: {
+    fontSize: 8.5,
+    fontWeight: 700,
+    textAlign: "center",
+    marginTop: 2
   },
   companyName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 700,
-    textAlign: "center"
-  },
-  small: {
-    fontSize: 7
-  },
-  row: {
-    flexDirection: "row"
-  },
-  sectionTitle: {
     textAlign: "center",
-    textDecoration: "underline",
-    marginVertical: 3
+    marginTop: 3,
+    letterSpacing: 0.5
   },
-  lineBox: {
-    borderBottom: "1 solid #9ca3af",
-    minHeight: 14,
-    paddingTop: 2
-  },
-  half: {
-    width: "50%",
-    paddingHorizontal: 4
-  },
-  table: {
-    marginTop: 6,
-    borderTop: "1 solid #111827",
-    borderLeft: "1 solid #111827"
-  },
-  tableRow: {
-    flexDirection: "row",
-    minHeight: 22
-  },
-  tableHeader: {
-    fontSize: 8,
+  companyAddress: {
+    fontSize: 7.5,
     textAlign: "center",
-    padding: 3,
-    borderBottom: "1 solid #111827",
-    borderRight: "1 solid #111827"
+    marginTop: 1
   },
-  tableCell: {
-    padding: 4,
-    borderBottom: "1 solid #111827",
-    borderRight: "1 solid #111827"
-  },
-  totalsLabel: {
-    width: "78%",
-    padding: 3,
-    textAlign: "right",
-    fontWeight: 700,
-    borderBottom: "1 solid #111827",
-    borderRight: "1 solid #111827"
-  },
-  totalsValue: {
-    width: "22%",
-    padding: 3,
-    textAlign: "right",
-    borderBottom: "1 solid #111827",
-    borderRight: "1 solid #111827"
-  },
-  footer: {
-    marginTop: 8,
+  contactRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 10
+    fontSize: 7.5,
+    marginTop: 3,
+    paddingHorizontal: 4
   },
-  signatureBlock: {
-    width: "33%",
-    minHeight: 58,
-    justifyContent: "flex-end"
+  complaintMobile: {
+    fontSize: 8.5,
+    fontWeight: 700,
+    textAlign: "center",
+    marginTop: 2
+  },
+  invoiceBanner: {
+    marginVertical: 4,
+    paddingVertical: 3,
+    backgroundColor: "#1e293b",
+    textAlign: "center"
+  },
+  invoiceBannerText: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#ffffff",
+    letterSpacing: 1,
+    textTransform: "uppercase"
+  },
+  metaGrid: {
+    flexDirection: "row",
+    border: "1 solid #cbd5e1",
+    marginBottom: 6
+  },
+  metaColLeft: {
+    width: "50%",
+    padding: 5,
+    borderRight: "1 solid #cbd5e1"
+  },
+  metaColRight: {
+    width: "50%",
+    padding: 5
+  },
+  metaRow: {
+    flexDirection: "row",
+    marginVertical: 1
+  },
+  metaLabel: {
+    width: "38%",
+    fontSize: 7.5,
+    color: "#475569",
+    fontWeight: 700
+  },
+  metaVal: {
+    width: "62%",
+    fontSize: 7.5,
+    color: "#0f172a"
+  },
+  // Key Yellow Section from Image 3/4
+  yellowSection: {
+    backgroundColor: "#fffde7",
+    border: "1.5 solid #ca8a04",
+    marginTop: 4,
+    marginBottom: 6
+  },
+  tableHeaderRow: {
+    flexDirection: "row",
+    backgroundColor: "#1e293b",
+    color: "#ffffff",
+    minHeight: 22,
+    alignItems: "center"
+  },
+  tableHeaderCell: {
+    fontSize: 7.5,
+    fontWeight: 700,
+    textAlign: "center",
+    padding: 3,
+    color: "#ffffff",
+    borderRight: "1 solid #334155"
+  },
+  tableBodyRow: {
+    flexDirection: "row",
+    backgroundColor: "#fef9c3",
+    borderBottom: "1 dotted #eab308",
+    minHeight: 40
+  },
+  tableBodyCell: {
+    padding: 4,
+    fontSize: 7.5,
+    color: "#1e293b",
+    borderRight: "1 dotted #eab308"
+  },
+  specLine: {
+    fontSize: 7.5,
+    marginVertical: 0.5
+  },
+  specBold: {
+    fontWeight: 700
+  },
+  totalRow: {
+    flexDirection: "row",
+    backgroundColor: "#fef08a",
+    borderTop: "1.5 solid #ca8a04"
+  },
+  totalCell: {
+    padding: 4,
+    fontSize: 8,
+    fontWeight: 700,
+    color: "#0f172a",
+    borderRight: "1 solid #ca8a04"
+  },
+  grandTotalBox: {
+    padding: 6,
+    backgroundColor: "#fef9c3",
+    border: "1 solid #eab308",
+    marginBottom: 8
+  },
+  grandTotalText: {
+    fontSize: 8.5,
+    color: "#0f172a"
+  },
+  bold: {
+    fontWeight: 700
+  },
+  footerSignatures: {
+    marginTop: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end"
+  },
+  signBlock: {
+    alignItems: "center",
+    width: "42%"
   },
   signatureImage: {
-    width: 92,
-    height: 34,
+    width: 100,
+    height: 40,
     objectFit: "contain",
     marginBottom: 2
   }
@@ -145,127 +243,220 @@ function money(value: unknown) {
   });
 }
 
-function date(value: Date) {
+function dateStr(value: Date) {
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric"
-  }).format(value);
+  }).format(new Date(value));
 }
 
-function ValueLine({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <View style={styles.lineBox}>
-      <Text>
-        {label}: {value || ""}
-      </Text>
-    </View>
-  );
+function numberToWords(num: number): string {
+  const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const n = Math.floor(Math.abs(num));
+  if (n === 0) return 'Zero Rupees Only';
+
+  function inWords(n: number): string {
+    if (n < 20) return a[n];
+    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : ' ');
+    if (n < 1000) return a[Math.floor(n / 100)] + 'Hundred ' + (n % 100 ? 'and ' + inWords(n % 100) : '');
+    if (n < 100000) return inWords(Math.floor(n / 1000)) + 'Thousand ' + (n % 1000 ? ' ' + inWords(n % 1000) : '');
+    if (n < 10000000) return inWords(Math.floor(n / 100000)) + 'Lakh ' + (n % 100000 ? ' ' + inWords(n % 100000) : '');
+    return inWords(Math.floor(n / 10000000)) + 'Crore ' + (n % 10000000 ? ' ' + inWords(n % 10000000) : '');
+  }
+
+  return (inWords(n) + 'Rupees Only').replace(/\s+/g, ' ').trim();
+}
+
+function parseItemDetails(description: string) {
+  if (!description.includes("|")) {
+    return { mainTitle: description, details: [] };
+  }
+
+  const parts = description.split("—");
+  const mainTitle = parts[0]?.trim() || "Weighing Instrument";
+  const detailsStr = parts[1] || "";
+  const details = detailsStr.split("|").map((s) => s.trim()).filter(Boolean);
+
+  return { mainTitle, details };
 }
 
 export function InvoicePdfDocument({ invoice }: { invoice: InvoiceWithItems }) {
+  const clientName = invoice.firmName || invoice.clientCompanyNameSnapshot || invoice.clientNameSnapshot || "-";
+  const proprietorName = invoice.proprietorName || invoice.contactPersonName || "-";
+  const address = invoice.clientAddressSnapshot || "-";
+  const mobile = invoice.contactPersonNumber || invoice.clientMobileSnapshot || "-";
+  const gstin = invoice.clientGSTINSnapshot || invoice.clientGstinSnapshot || "-";
+
   return (
     <Document title={invoice.invoiceNumber}>
       <Page size="A4" style={styles.page}>
         <View style={styles.shell}>
-          <Text style={styles.companyTitle}>GOVERNMENT APPROVED TEST CENTRE</Text>
-          <Text style={[styles.center, styles.small]}>(Approved : Department of Consumer Affairs, Legal metrology Division)</Text>
-          <Text style={[styles.center, styles.small]}>(under section 24 of the legal metrology Act, 2009)</Text>
-          <Text style={[styles.center, styles.small]}>(GATC) No. IND/GATC/TS/26/39</Text>
-          <Text style={styles.companyName}>VISHWAKARMA SERVICES</Text>
-          <Text style={[styles.center, styles.small]}>
-            8-1-379/4, Kranthi Nagar Colony, NALGONDA-508 001. E-mail: vishwarooapa2007@gmail.com
-          </Text>
-          <Text style={[styles.center, { fontWeight: 700 }]}>Complaint Mobile No 9849741617</Text>
-
-          <View style={[styles.row, { marginTop: 6 }]}>
-            <Text style={{ width: "50%", fontWeight: 700 }}>Invoice No. {invoice.invoiceNumber}</Text>
-            <Text style={{ width: "50%", textAlign: "right", fontWeight: 700 }}>Date: {date(invoice.invoiceDate)}</Text>
+          {/* Header Details (Reference Image 2) */}
+          <View style={styles.headerBox}>
+            <Text style={styles.govTitle}>GOVERNMENT APPROVED TEST CENTRE</Text>
+            <Text style={styles.subTitleText}>
+              (Approved : Department of consumer affairs, Legal metrology Division)
+            </Text>
+            <Text style={styles.subTitleText}>
+              (under section 24 of the legal metrology Act,2009)
+            </Text>
+            <Text style={styles.gatcNo}>(GATC) No. IND/GATC/TS/26/39</Text>
+            <Text style={styles.companyName}>VISHWAKARMA SERVICES</Text>
+            <Text style={styles.companyAddress}>
+              8-1-379/4, Kranthi Nagar Colony, NALGONDA-508 001. E-mail: vishwaroopa2007@gmail.com
+            </Text>
+            <View style={styles.contactRow}>
+              <Text>GSTIN: 36AVEPG8701H1ZP</Text>
+              <Text>Phone : +91-9849676054</Text>
+            </View>
+            <Text style={styles.complaintMobile}>Complaint Mobile No 9849676054</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Firm Details</Text>
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <ValueLine label="Name of Firm" value={invoice.clientCompanyNameSnapshot || invoice.clientNameSnapshot} />
-              <ValueLine label="Address" value={invoice.clientAddressSnapshot} />
-            </View>
-            <View style={styles.half}>
-              <ValueLine label="Unique No. / GSTIN" value={invoice.clientGstinSnapshot || invoice.clientGSTINSnapshot} />
-              <ValueLine label="Contact No." value={invoice.clientMobileSnapshot} />
-            </View>
+          {/* Invoice Banner */}
+          <View style={styles.invoiceBanner}>
+            <Text style={styles.invoiceBannerText}>TAX INVOICE</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Instruments Details</Text>
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <ValueLine label="Type of Instrument" value={invoice.typeOfInstrument} />
-              <ValueLine label="Capacity" value={invoice.capacity} />
-              <ValueLine label="Make" value={invoice.make} />
-            </View>
-            <View style={styles.half}>
-              <ValueLine label="Serial Number" value={invoice.serialNumber} />
-              <ValueLine label="Accuracy Class" value={invoice.accuracyClass} />
-              <ValueLine label="Model Approval No" value={invoice.modelApprovalNumber || invoice.model} />
-            </View>
-          </View>
-
-          <View style={styles.table}>
-            <View style={styles.tableRow}>
-              <Text style={[styles.tableHeader, { width: "7%" }]}>Sl. No.</Text>
-              <Text style={[styles.tableHeader, { width: "45%" }]}>DESCRIPTION</Text>
-              <Text style={[styles.tableHeader, { width: "12%" }]}>HSN</Text>
-              <Text style={[styles.tableHeader, { width: "8%" }]}>Qty.</Text>
-              <Text style={[styles.tableHeader, { width: "8%" }]}>Rate</Text>
-              <Text style={[styles.tableHeader, { width: "8%" }]}>Tax</Text>
-              <Text style={[styles.tableHeader, { width: "12%" }]}>AMOUNT Rs.</Text>
-            </View>
-            {invoice.items.map((item, index) => (
-              <View key={item.id} style={styles.tableRow}>
-                <Text style={[styles.tableCell, { width: "7%", textAlign: "center" }]}>{index + 1}.</Text>
-                <Text style={[styles.tableCell, { width: "45%" }]}>{item.description}</Text>
-                <Text style={[styles.tableCell, { width: "12%" }]}>{item.hsnCode || ""}</Text>
-                <Text style={[styles.tableCell, { width: "8%", textAlign: "right" }]}>{Number(item.quantity)}</Text>
-                <Text style={[styles.tableCell, { width: "8%", textAlign: "right" }]}>{money(item.rate)}</Text>
-                <Text style={[styles.tableCell, { width: "8%", textAlign: "right" }]}>{Number(item.taxRate)}%</Text>
-                <Text style={[styles.tableCell, { width: "12%", textAlign: "right" }]}>{money(item.amount)}</Text>
+          {/* Meta Information Section */}
+          <View style={styles.metaGrid}>
+            <View style={styles.metaColLeft}>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Invoice No:</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{invoice.invoiceNumber}</Text>
               </View>
-            ))}
-            <View style={styles.row}>
-              <Text style={styles.totalsLabel}>TOTAL</Text>
-              <Text style={styles.totalsValue}>{money(invoice.subtotal)}</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Invoice Date:</Text>
+                <Text style={styles.metaVal}>{dateStr(invoice.invoiceDate)}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Instrument Type:</Text>
+                <Text style={styles.metaVal}>{invoice.typeOfInstrument || "Weighing Machine"}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Accuracy Class:</Text>
+                <Text style={styles.metaVal}>{invoice.accuracyClass || "class III"}</Text>
+              </View>
             </View>
-            <View style={styles.row}>
-              <Text style={styles.totalsLabel}>CGST</Text>
-              <Text style={styles.totalsValue}>{money(invoice.cgstAmount)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.totalsLabel}>SGST</Text>
-              <Text style={styles.totalsValue}>{money(invoice.sgstAmount)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.totalsLabel}>GRAND TOTAL</Text>
-              <Text style={[styles.totalsValue, { fontWeight: 700 }]}>{money(invoice.totalAmount)}</Text>
+
+            <View style={styles.metaColRight}>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Firm Name:</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{clientName}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Contact Person:</Text>
+                <Text style={styles.metaVal}>{proprietorName}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Address:</Text>
+                <Text style={styles.metaVal}>{address}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Mobile / GSTIN:</Text>
+                <Text style={styles.metaVal}>{mobile} / {gstin}</Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.footer}>
-            <View style={styles.signatureBlock}>
-              {invoice.customerSignature ? <Image src={invoice.customerSignature} style={styles.signatureImage} /> : null}
-              <Text style={{ fontWeight: 700 }}>Customer Signature</Text>
+          {/* Redesigned Key Table (Yellow Background with dotted interior borders as shown in Image 3/4) */}
+          <View style={styles.yellowSection}>
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.tableHeaderCell, { width: "5%" }]}>S.NO</Text>
+              <Text style={[styles.tableHeaderCell, { width: "24%" }]}>Location of the weights/ measures</Text>
+              <Text style={[styles.tableHeaderCell, { width: "41%" }]}>Details of weights/measures/weighing/Measuring instruments</Text>
+              <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Verif. Fee Rs.</Text>
+              <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Charges Rs.</Text>
+              <Text style={[styles.tableHeaderCell, { width: "10%", borderRightWidth: 0 }]}>Total Fee Rs.</Text>
             </View>
-            <View style={{ width: "34%" }}>
-              <Text style={styles.small}>Amount in words: ........................................................................</Text>
-              <Text style={styles.small}>Payment Details: .............................................................................</Text>
-              <Text style={styles.small}>Mode of Payment: Cash/UPI/NEFT/Cheque: ....................................</Text>
-              <Text style={[styles.small, { marginTop: 4, fontWeight: 700 }]}>Terms & Conditions</Text>
-              <Text style={styles.small}>1. Subject to Nalgonda Jurisdiction only.</Text>
-              <Text style={styles.small}>Declaration: Certified that the above instrument has been tested and verified in accordance with the applicable provisions of the Legal metrology Act, Rules and Government Approved Test Centre conditions.</Text>
+
+            {invoice.items && invoice.items.length > 0 ? (
+              invoice.items.map((item, idx) => {
+                const parsed = parseItemDetails(item.description);
+                const charges = invoice.cgstAmount + invoice.sgstAmount;
+
+                return (
+                  <View key={idx} style={styles.tableBodyRow}>
+                    <Text style={[styles.tableBodyCell, { width: "5%", textAlign: "center" }]}>{idx + 1}</Text>
+
+                    <Text style={[styles.tableBodyCell, { width: "24%" }]}>
+                      <Text style={styles.specBold}>{parsed.mainTitle}</Text>
+                    </Text>
+
+                    <View style={[styles.tableBodyCell, { width: "41%" }]}>
+                      {parsed.details.length > 0 ? (
+                        parsed.details.map((detail, dIdx) => (
+                          <Text key={dIdx} style={styles.specLine}>• {detail}</Text>
+                        ))
+                      ) : (
+                        <>
+                          <Text style={styles.specLine}>• Denomination/Capacity: {invoice.capacity || item.description}</Text>
+                          <Text style={styles.specLine}>• Quantity: {item.quantity} {item.unit}</Text>
+                          {invoice.make ? <Text style={styles.specLine}>• Make: {invoice.make}</Text> : null}
+                          {invoice.model ? <Text style={styles.specLine}>• Model: {invoice.model}</Text> : null}
+                          {invoice.accuracyClass ? <Text style={styles.specLine}>• Class: {invoice.accuracyClass}</Text> : null}
+                          {invoice.serialNumber ? <Text style={styles.specLine}>• Serial No: {invoice.serialNumber}</Text> : null}
+                        </>
+                      )}
+                    </View>
+
+                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right" }]}>{money(invoice.subtotal || item.rate)}</Text>
+                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right" }]}>{money(charges)}</Text>
+                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", borderRightWidth: 0 }]}>
+                      {money(invoice.totalAmount || item.amount)}
+                    </Text>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={styles.tableBodyRow}>
+                <Text style={[styles.tableBodyCell, { width: "5%", textAlign: "center" }]}>1</Text>
+                <Text style={[styles.tableBodyCell, { width: "24%" }]}>
+                  <Text style={styles.specBold}>{invoice.typeOfInstrument || "Weighing Machine"}</Text>
+                </Text>
+                <View style={[styles.tableBodyCell, { width: "41%" }]}>
+                  <Text style={styles.specLine}>• Capacity: {invoice.capacity || "-"}</Text>
+                  <Text style={styles.specLine}>• Model: {invoice.model || "-"}</Text>
+                  <Text style={styles.specLine}>• Class: {invoice.accuracyClass || "-"}</Text>
+                  <Text style={styles.specLine}>• Serial No: {invoice.serialNumber || "-"}</Text>
+                </View>
+                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right" }]}>{money(invoice.subtotal)}</Text>
+                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right" }]}>{money(invoice.cgstAmount + invoice.sgstAmount)}</Text>
+                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
+              </View>
+            )}
+
+            {/* Total Summary Row */}
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalCell, { width: "70%", textAlign: "right" }]}>Total</Text>
+              <Text style={[styles.totalCell, { width: "10%", textAlign: "right" }]}>{money(invoice.subtotal)}</Text>
+              <Text style={[styles.totalCell, { width: "10%", textAlign: "right" }]}>{money(invoice.cgstAmount + invoice.sgstAmount)}</Text>
+              <Text style={[styles.totalCell, { width: "10%", textAlign: "right", borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
             </View>
-            <View style={[styles.signatureBlock, { alignItems: "flex-end" }]}>
-              {invoice.authorizedSignatureSnapshot ? <Image src={invoice.authorizedSignatureSnapshot} style={styles.signatureImage} /> : null}
-              <Text style={{ fontWeight: 700, textAlign: "right" }}>Authorized Signatory</Text>
-              <Text style={{ textAlign: "right" }}>{invoice.authorizedSignatoryName || "Vishwakarma Services"}</Text>
-              <Text style={{ marginTop: 12, fontWeight: 700 }}>(Seal)</Text>
+          </View>
+
+          {/* Grand Total In Words Box */}
+          <View style={styles.grandTotalBox}>
+            <Text style={styles.grandTotalText}>
+              Grand Total Rs. <Text style={styles.bold}>{money(invoice.totalAmount)}</Text> (in words: <Text style={styles.bold}>{numberToWords(invoice.totalAmount)}</Text>)
+            </Text>
+          </View>
+
+          {/* Bottom Signatures Block */}
+          <View style={styles.footerSignatures}>
+            <View style={styles.signBlock}>
+              {invoice.customerSignature ? <Image src={invoice.customerSignature} style={styles.signatureImage} /> : <View style={{ height: 40 }} />}
+              <Text style={styles.bold}>Customer Signature</Text>
+            </View>
+
+            <View style={styles.signBlock}>
+              {invoice.authorizedSignatureSnapshot ? (
+                <Image src={invoice.authorizedSignatureSnapshot} style={styles.signatureImage} />
+              ) : <View style={{ height: 40 }} />}
+              <Text style={styles.bold}>{invoice.authorizedSignatoryName || "Vishwakarma Services"}</Text>
+              <Text style={{ fontSize: 7.5, marginTop: 1 }}>Inspector Legal Metrology</Text>
             </View>
           </View>
         </View>
