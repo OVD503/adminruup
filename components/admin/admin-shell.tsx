@@ -15,7 +15,7 @@ export function AdminShell({ children, session }: { children: React.ReactNode; s
   return (
     <div className="min-h-screen bg-slate-50/50 antialiased">
       <Sidebar session={session} />
-      <div className="pl-64 min-h-screen">
+      <div className="pl-0 md:pl-64 min-h-screen">
         {children}
       </div>
     </div>

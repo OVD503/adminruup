@@ -464,21 +464,21 @@ export function InvoiceForm() {
   return (
     <main className="erp-shell min-h-screen">
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/85 backdrop-blur">
-        <div className="flex w-full items-center justify-between px-2 sm:px-4 py-4">
-          <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-6 py-3.5 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <Link href="/admin/dashboard">
               <Button variant="outline" size="sm" className="gap-1.5 font-medium text-slate-700">
-                <Home className="h-4 w-4" /> Home
+                <Home className="h-4 w-4" /> <span className="hidden sm:inline">Home</span>
               </Button>
             </Link>
             <Link href="/admin/invoices"><Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /> Invoices</Button></Link>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-slate-950">Create Invoice</h1>
-              <p className="text-sm text-slate-500">Fill in details and generate GATC-format invoice PDF.</p>
+              <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-950">Create Invoice</h1>
+              <p className="text-xs sm:text-sm text-slate-500">Fill in details and generate GATC-format invoice PDF.</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button type="submit" form="invoice-form" disabled={saving}>
+          <div className="flex gap-2 w-full sm:w-auto justify-end">
+            <Button type="submit" form="invoice-form" disabled={saving} className="w-full sm:w-auto">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
               Generate Invoice
             </Button>

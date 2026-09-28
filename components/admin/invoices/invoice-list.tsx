@@ -78,28 +78,28 @@ export function InvoiceList({ role }: { role: "SUPER_ADMIN" | "ADMIN" }) {
   return (
     <main className="erp-shell min-h-screen">
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-[1280px] flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-3.5 sm:py-4">
           <div className="flex items-center gap-3">
             <Link href="/admin/dashboard">
               <Button variant="outline" size="sm" className="gap-1.5 font-medium text-slate-700">
                 <Home className="h-4 w-4" />
-                Home
+                <span className="hidden sm:inline">Home</span>
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-slate-950">Invoice Register</h1>
-              <p className="text-sm text-slate-500">{isSuperAdmin ? "All invoices and their generating Admin." : "Search, filter, open, download, copy PDF links, or delete your invoices."}</p>
+              <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-950">Invoice Register</h1>
+              <p className="text-xs sm:text-sm text-slate-500">{isSuperAdmin ? "All invoices and their generating Admin." : "Search, filter, open, download, copy PDF links, or delete your invoices."}</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
             {!isSuperAdmin ? <Link href="/admin/settings">
-              <Button variant="outline">
+              <Button variant="outline" size="sm">
                 <Settings className="h-4 w-4" />
                 Signature
               </Button>
             </Link> : null}
             {!isSuperAdmin ? <Link href="/admin/invoices/new">
-              <Button>
+              <Button size="sm">
                 <FilePlus2 className="h-4 w-4" />
                 Create New Invoice
               </Button>
@@ -108,8 +108,8 @@ export function InvoiceList({ role }: { role: "SUPER_ADMIN" | "ADMIN" }) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1280px] space-y-5 px-6 py-8">
-        <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-soft md:grid-cols-[1fr_160px_160px_auto]">
+      <div className="mx-auto max-w-[1280px] space-y-4 sm:space-y-5 px-4 py-5 sm:px-6 sm:py-8">
+        <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3.5 sm:p-4 shadow-soft grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_160px_160px_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <Input className="pl-9" placeholder="Invoice number or client" value={query} onChange={(event) => setQuery(event.target.value)} />
@@ -121,10 +121,10 @@ export function InvoiceList({ role }: { role: "SUPER_ADMIN" | "ADMIN" }) {
             <option value="CANCELLED">Cancelled</option>
           </select>
           <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-          <Button onClick={loadInvoices}>Search</Button>
+          <Button onClick={loadInvoices} className="w-full sm:w-auto">Search</Button>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-soft">
+        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-soft">
           <table className="w-full min-w-[920px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
               <tr>

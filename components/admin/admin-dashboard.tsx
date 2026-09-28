@@ -38,45 +38,45 @@ export function AdminDashboard({ role, displayName }: { role: "SUPER_ADMIN" | "A
   return (
     <main className="erp-shell min-h-screen">
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-[1280px] flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-3.5 sm:py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-950 text-white">
-              <ReceiptText className="h-5 w-5" />
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-md bg-slate-950 text-white shrink-0">
+              <ReceiptText className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <h1 className="font-black tracking-tight text-slate-950 text-lg">{isSuperAdmin ? "Administration Console" : "Premium Invoice Generator"}</h1>
+              <h1 className="font-black tracking-tight text-slate-950 text-base sm:text-lg">{isSuperAdmin ? "Administration Console" : "Premium Invoice Generator"}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">{isSuperAdmin ? "Super Admin" : "Admin"}: {displayName}</Badge>
-            <Button variant="ghost" onClick={logout}>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 text-xs sm:text-sm">{isSuperAdmin ? "Super Admin" : "Admin"}: {displayName}</Badge>
+            <Button variant="ghost" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4" />
-              Logout
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1280px] space-y-8 px-6 py-8">
-        <section className="flex flex-col justify-between gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-soft md:flex-row md:items-center">
+      <div className="mx-auto max-w-[1280px] space-y-5 sm:space-y-8 px-4 py-5 sm:px-6 sm:py-8">
+        <section className="flex flex-col justify-between gap-5 rounded-lg border border-slate-200 bg-white p-4 sm:p-6 shadow-soft md:flex-row md:items-center">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{isSuperAdmin ? "Workspace Overview" : "Invoice Generator"}</p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950">{isSuperAdmin ? "MANAGE ADMINS" : "CREATE INVOICE"}</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{isSuperAdmin ? "Workspace Overview" : "Invoice Generator"}</p>
+            <h2 className="mt-1.5 sm:mt-2 text-2xl sm:text-3xl font-black tracking-tight text-slate-950">{isSuperAdmin ? "MANAGE ADMINS" : "CREATE INVOICE"}</h2>
+            <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-5 sm:leading-6 text-slate-600">
               {isSuperAdmin ? "Manage Admin accounts and monitor every invoice generated across the workspace." : "Use predefined services, capture signatures, calculate GST, and generate print-ready PDFs."}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {isSuperAdmin ? <Link href="/admin/admins">
-              <Button size="lg">
+              <Button size="lg" className="w-full sm:w-auto">
                 <Users className="h-4 w-4" />
                 Manage Admins
               </Button>
             </Link> : <Link href="/admin/invoices/new">
-              <Button size="lg"><FilePlus2 className="h-4 w-4" />New Invoice</Button>
+              <Button size="lg" className="w-full sm:w-auto"><FilePlus2 className="h-4 w-4" />New Invoice</Button>
             </Link>}
             {!isSuperAdmin ? <Link href="/admin/settings">
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto">
                 <Settings className="h-4 w-4" />
                 Signature
               </Button>
@@ -84,7 +84,7 @@ export function AdminDashboard({ role, displayName }: { role: "SUPER_ADMIN" | "A
           </div>
         </section>
 
-        <section className="grid gap-5 md:grid-cols-3">
+        <section className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           <Metric title="Total Invoices" value={stats.totalInvoices.toString()} />
           <Metric title="Generated PDFs" value={stats.generatedInvoices.toString()} />
           <Metric title="Billed Value" value={stats.totalAmount.toLocaleString("en-IN", { style: "currency", currency: "INR" })} />

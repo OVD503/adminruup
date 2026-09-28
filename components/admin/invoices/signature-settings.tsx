@@ -32,22 +32,22 @@ export function SignatureSettings({ adminId }: { adminId: string }) {
   return (
     <main className="erp-shell min-h-screen">
       <header className="border-b border-slate-200/80 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex max-w-[800px] items-center gap-3 px-6 py-4">
+        <div className="mx-auto flex max-w-[800px] items-center gap-3 px-4 sm:px-6 py-3.5 sm:py-4">
           <Link href="/admin/dashboard">
             <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4" /> Dashboard
+              <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Dashboard</span>
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl font-black text-slate-950">My Signature</h1>
-            <p className="text-sm text-slate-500">
+            <h1 className="text-lg sm:text-xl font-black text-slate-950">My Signature</h1>
+            <p className="text-xs sm:text-sm text-slate-500">
               Authorized signature for your invoices
             </p>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[800px] px-6 py-8">
+      <div className="mx-auto max-w-[800px] px-4 py-5 sm:px-6 sm:py-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
