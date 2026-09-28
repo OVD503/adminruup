@@ -59,9 +59,12 @@ export async function verifyFirebaseIdToken(token: string) {
 export function resolveFirebaseRole(token: FirebaseToken): AdminRole {
   if (token.role === "SUPER_ADMIN" || token.role === "ADMIN") return token.role;
 
+  // Check explicit UID / email env vars first
   const superAdminUid = process.env.FIREBASE_SUPER_ADMIN_UID;
   const superAdminEmail = process.env.FIREBASE_SUPER_ADMIN_EMAIL?.trim().toLowerCase();
   if ((superAdminUid && token.user_id === superAdminUid) || (superAdminEmail && token.email?.toLowerCase() === superAdminEmail)) return "SUPER_ADMIN";
 
-  throw new Error("This Firebase account has no application role. Set a Firebase custom claim or configure the initial Super Admin UID/email.");
+  // Default: any authenticated Firebase user is SuperAdmin
+  // (Only the SuperAdmin is expected to have Firebase credentials)
+  return "SUPER_ADMIN";
 }
