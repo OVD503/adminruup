@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { PenLine, RotateCcw, Save, Upload, X, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,8 +19,10 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
   const [hasInk, setHasInk] = useState(Boolean(value));
   const [mode, setMode] = useState<Mode>("draw");
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  // Track last point for smooth line rendering (needed for Apple Pencil)
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Initialise / refresh the canvas whenever we are in draw mode
+  // ─── Canvas init ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (mode !== "draw") return;
     const canvas = canvasRef.current;
@@ -31,7 +33,9 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
     canvas.width = Math.max(1, Math.floor(rect.width * ratio));
     canvas.height = Math.max(1, Math.floor(rect.height * ratio));
 
-    const ctx = canvas.getContext("2d");
+    // willReadFrequently: true improves performance on Safari/WebKit when we
+    // later call toDataURL. Without it Safari may stall on Retina iPads.
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
     ctx.scale(ratio, ratio);
     ctx.lineWidth = 2;
@@ -48,39 +52,105 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
     }
   }, [mode, value, uploadPreview]);
 
+  // ─── Prevent page scroll/bounce while actively drawing (iPadOS Safari) ─────
+  // When the user is drawing with Apple Pencil or finger on iPad, Safari may
+  // try to scroll or rubber-band the page. We attach a global touchmove
+  // listener on the *document* that calls preventDefault() while drawing.
+  useEffect(() => {
+    function preventScroll(e: TouchEvent) {
+      if (drawingRef.current) {
+        e.preventDefault();
+      }
+    }
+
+    // { passive: false } is required to call preventDefault() on touch events in Safari.
+    document.addEventListener("touchmove", preventScroll, { passive: false });
+    return () => {
+      document.removeEventListener("touchmove", preventScroll);
+    };
+  }, []);
+
   // ─── Draw helpers ──────────────────────────────────────────────────────────
-  function point(event: React.PointerEvent<HTMLCanvasElement>) {
+  const getPoint = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-  }
+  }, []);
 
-  function begin(event: React.PointerEvent<HTMLCanvasElement>) {
-    const ctx = canvasRef.current?.getContext("2d");
+  /** Calculate line width from Apple Pencil pressure (or default for mouse) */
+  const getLineWidth = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    // Apple Pencil reports pointerType === "pen" with pressure 0..1
+    // Mouse always reports pressure 0.5 (or 0 when not pressing)
+    if (event.pointerType === "pen" && event.pressure > 0) {
+      // Map pressure 0..1 → lineWidth 1..5 for natural feel
+      return 1 + event.pressure * 4;
+    }
+    // Touch or mouse – fixed width
+    return 2;
+  }, []);
+
+  const begin = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    // Prevent default to stop Safari from initiating scroll/zoom gestures
+    event.preventDefault();
+    event.stopPropagation();
+
+    const ctx = canvasRef.current?.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
+
     drawingRef.current = true;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    const p = point(event);
+
+    // setPointerCapture ensures we keep receiving events even if the
+    // pointer (Apple Pencil tip) drifts slightly outside the canvas bounds.
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Some browsers throw if capture is already set — safe to ignore
+    }
+
+    const p = getPoint(event);
+    lastPointRef.current = p;
+
+    ctx.lineWidth = getLineWidth(event);
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
-  }
-
-  function draw(event: React.PointerEvent<HTMLCanvasElement>) {
-    if (!drawingRef.current) return;
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const p = point(event);
+    // Draw a single dot so tapping in place leaves a mark
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
-    setHasInk(true);
-  }
+  }, [getPoint, getLineWidth]);
 
-  function end() {
+  const draw = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    // Always prevent default on move to block iOS Safari scroll
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!drawingRef.current) return;
+
+    const ctx = canvasRef.current?.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+
+    const p = getPoint(event);
+    ctx.lineWidth = getLineWidth(event);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    lastPointRef.current = p;
+    setHasInk(true);
+  }, [getPoint, getLineWidth]);
+
+  const end = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
     drawingRef.current = false;
-  }
+    lastPointRef.current = null;
+
+    // Release pointer capture
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // safe to ignore
+    }
+  }, []);
 
   function clearDraw() {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
+    const ctx = canvas?.getContext("2d", { willReadFrequently: true });
     if (!canvas || !ctx) return;
     const rect = canvas.getBoundingClientRect();
     ctx.fillStyle = "#ffffff";
@@ -165,15 +235,59 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
       {mode === "draw" && (
         <div className="space-y-2">
           <p className="text-xs text-slate-500">
-            Sign directly in the box below using a stylus or finger.
+            Sign directly in the box below using Apple Pencil, stylus, or finger.
           </p>
+          {/*
+            Apple/iPad compatibility notes for this <canvas>:
+            ─────────────────────────────────────────────────
+            1. style={{ touchAction: "none" }}
+               Inline style is required because Safari/WebKit ignores the
+               Tailwind `touch-none` class in some scenarios. This disables
+               the browser's default touch gestures (scroll, pinch-zoom)
+               on the canvas element.
+
+            2. style={{ overscrollBehavior: "none" }}
+               Prevents the rubber-band "bounce" effect on iPadOS Safari
+               when the user drags beyond the canvas boundary.
+
+            3. style={{ WebkitUserSelect: "none", userSelect: "none" }}
+               Prevents text-selection callouts from appearing when
+               long-pressing on the canvas with Apple Pencil or finger.
+
+            4. style={{ WebkitTouchCallout: "none" } as any}
+               Disables the context menu / callout popup that Safari shows
+               on long-press. TypeScript doesn't recognise this proprietary
+               CSS property, hence the `as any` escape.
+
+            5. onPointerDown / onPointerMove / onPointerUp all call
+               event.preventDefault() + event.stopPropagation() so that
+               Safari cannot hijack the gesture for scrolling or zooming.
+
+            6. onPointerLeave mirrors onPointerUp so that if the Apple
+               Pencil tip moves off the canvas edge the stroke is cleanly
+               finalised instead of "stuck" in drawing mode.
+
+            7. We use setPointerCapture() in begin() so that fast stylus
+               strokes that momentarily leave the canvas boundary still
+               deliver move events to the canvas element.
+          */}
           <canvas
             ref={canvasRef}
             className="h-40 w-full touch-none rounded-md border border-slate-200 bg-white shadow-inner"
+            style={{
+              touchAction: "none",
+              overscrollBehavior: "none",
+              WebkitUserSelect: "none",
+              userSelect: "none",
+              msTouchAction: "none",
+              willChange: "transform", // hint GPU compositing on Apple devices
+              ...(({ WebkitTouchCallout: "none" }) as any),
+            }}
             onPointerDown={begin}
             onPointerMove={draw}
             onPointerUp={end}
             onPointerCancel={end}
+            onPointerLeave={end}
             aria-label={label}
           />
           <div className="flex justify-end gap-2">
@@ -232,4 +346,3 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
     </div>
   );
 }
-

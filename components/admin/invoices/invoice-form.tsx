@@ -92,7 +92,11 @@ const emptyItem = {
 };
 
 function todayDate() {
-  return new Date(new Date().toISOString().slice(0, 10));
+  // Safari-safe: use component parts instead of parsing a date string.
+  // new Date("YYYY-MM-DD") is treated as UTC in Safari which can shift
+  // the date backward for users in positive UTC-offset timezones (e.g. IST).
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
 function money(value: number) {
@@ -488,7 +492,11 @@ export function InvoiceForm() {
         </div>
       </header>
 
-      <form id="invoice-form" onSubmit={form.handleSubmit(submit, onInvalid)} className="w-full max-w-full space-y-6 px-1 sm:px-2 py-6">
+      {/* noValidate prevents Safari from running its own HTML5 validation
+           (which throws "The string did not match the expected pattern" on
+           type="date" and type="number" inputs). react-hook-form + Zod handle
+           all validation instead. */}
+      <form id="invoice-form" noValidate onSubmit={form.handleSubmit(submit, onInvalid)} className="w-full max-w-full space-y-6 px-1 sm:px-2 py-6">
         <div className="space-y-6">
           {createdInvoice ? (
             <Card className="border-emerald-200 bg-emerald-50">
@@ -550,8 +558,24 @@ export function InvoiceForm() {
                 <Input
                   type="date"
                   className="w-48"
-                  value={form.watch("invoiceDate") ? new Date(form.watch("invoiceDate")).toISOString().slice(0, 10) : ""}
-                  onChange={(event) => form.setValue("invoiceDate", new Date(`${event.target.value}T00:00:00`))}
+                  value={(() => {
+                    const d = form.watch("invoiceDate");
+                    if (!d) return "";
+                    const dt = new Date(d);
+                    // Format as YYYY-MM-DD using local date parts (Safari-safe)
+                    const y = dt.getFullYear();
+                    const m = String(dt.getMonth() + 1).padStart(2, "0");
+                    const day = String(dt.getDate()).padStart(2, "0");
+                    return `${y}-${m}-${day}`;
+                  })()}
+                  onChange={(event) => {
+                    const val = event.target.value; // "YYYY-MM-DD"
+                    if (!val) return;
+                    // Safari-safe: parse date parts individually to avoid
+                    // "The string did not match the expected pattern" error
+                    const [y, m, d] = val.split("-").map(Number);
+                    form.setValue("invoiceDate", new Date(y, m - 1, d));
+                  }}
                 />
               </div>
             </CardContent>
@@ -926,10 +950,11 @@ export function InvoiceForm() {
                       </td>
                       <td className="p-2.5">
                         <input
-                          type="number"
-                          min="0"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={row.quantity}
-                          onChange={(e) => updateFeeRow(index, "quantity", Number(e.target.value))}
+                          onChange={(e) => updateFeeRow(index, "quantity", Number(e.target.value) || 0)}
                           className="w-full h-8 rounded border border-slate-300 px-2 text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       </td>
@@ -961,12 +986,11 @@ export function InvoiceForm() {
                         <div className="flex items-center justify-between gap-1">
                           <span className="text-slate-600 font-medium">Service fee:</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             readOnly={row.feePreset !== "Other"}
                             value={row.serviceFee ?? 0}
-                            onChange={(e) => updateFeeRow(index, "serviceFee", Number(e.target.value))}
+                            onChange={(e) => updateFeeRow(index, "serviceFee", Number(e.target.value) || 0)}
                             className={`w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ${row.feePreset !== "Other" ? "bg-slate-100 text-slate-700" : "bg-white"
                               }`}
                           />
@@ -974,12 +998,11 @@ export function InvoiceForm() {
                         <div className="flex items-center justify-between gap-1">
                           <span className="text-slate-600 font-medium">CGST (9%):</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             readOnly={row.feePreset !== "Other"}
                             value={row.cgst ?? 0}
-                            onChange={(e) => updateFeeRow(index, "cgst", Number(e.target.value))}
+                            onChange={(e) => updateFeeRow(index, "cgst", Number(e.target.value) || 0)}
                             className={`w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ${row.feePreset !== "Other" ? "bg-slate-100 text-slate-700" : "bg-white"
                               }`}
                           />
@@ -987,12 +1010,11 @@ export function InvoiceForm() {
                         <div className="flex items-center justify-between gap-1">
                           <span className="text-slate-600 font-medium">SGST (9%):</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             readOnly={row.feePreset !== "Other"}
                             value={row.sgst ?? 0}
-                            onChange={(e) => updateFeeRow(index, "sgst", Number(e.target.value))}
+                            onChange={(e) => updateFeeRow(index, "sgst", Number(e.target.value) || 0)}
                             className={`w-20 h-6 rounded border border-slate-300 px-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500 ${row.feePreset !== "Other" ? "bg-slate-100 text-slate-700" : "bg-white"
                               }`}
                           />
@@ -1016,13 +1038,13 @@ export function InvoiceForm() {
                   </div>
                   <div className="px-4 py-2 flex items-center gap-3">
                     <input
-                      type="number"
+                      type="text"
                       readOnly
                       value={totalVerificationFee}
                       className="w-24 h-8 rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-right text-slate-800"
                     />
                     <input
-                      type="number"
+                      type="text"
                       readOnly
                       value={totalCharges}
                       className="w-24 h-8 rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-right text-slate-800"
@@ -1035,7 +1057,7 @@ export function InvoiceForm() {
                   </div>
                   <div className="px-4 py-2 flex items-center">
                     <input
-                      type="number"
+                      type="text"
                       readOnly
                       value={finalFeeToBePaid}
                       className="w-24 h-8 rounded border border-slate-300 bg-white px-2 text-xs font-bold text-right text-slate-900"
