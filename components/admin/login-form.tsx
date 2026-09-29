@@ -75,6 +75,7 @@ export function LoginForm() {
 
       <form
         onSubmit={submit}
+        noValidate
         className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl"
       >
         {/* Gradient top border accent */}

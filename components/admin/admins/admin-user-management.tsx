@@ -94,7 +94,7 @@ export function AdminUserManagement() {
         </section>
         <aside className="h-fit rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
           <div className="mb-5 flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-slate-700" /><h2 className="font-bold text-slate-950">{editing ? "Edit Admin" : "Create Admin"}</h2></div>
-          <form className="space-y-4" onSubmit={save}>
+          <form className="space-y-4" noValidate onSubmit={save}>
             <div className="space-y-2"><Label>Admin Name</Label><Input value={form.displayName} onChange={(event) => setForm({ ...form, displayName: event.target.value })} /></div>
             <div className="space-y-2"><Label>User ID</Label><Input disabled={Boolean(editing)} value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value.toLowerCase() })} placeholder="e.g. arjun.patel" /></div>
             <div className="space-y-2"><Label>Email (optional)</Label><Input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></div>

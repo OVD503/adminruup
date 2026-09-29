@@ -29,9 +29,13 @@ export async function GET(request: Request) {
   if (mode) where.mode = mode;
   if (status) where.status = status;
   if (date) {
-    const start = new Date(`${date}T00:00:00`);
-    const end = new Date(`${date}T23:59:59.999`);
-    where.invoiceDate = { gte: start, lte: end };
+    const parts = date.split("-").map(Number);
+    if (parts.length === 3 && !parts.some(isNaN)) {
+      const [year, month, day] = parts;
+      const start = new Date(year, month - 1, day, 0, 0, 0);
+      const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+      where.invoiceDate = { gte: start, lte: end };
+    }
   }
 
   const items = await prisma.invoice.findMany({

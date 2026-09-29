@@ -137,8 +137,13 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
 
   const end = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
     event.preventDefault();
+    const wasDrawing = drawingRef.current;
     drawingRef.current = false;
     lastPointRef.current = null;
+
+    if (wasDrawing && canvasRef.current) {
+      onChange(canvasRef.current.toDataURL("image/png"));
+    }
 
     // Release pointer capture
     try {
@@ -146,7 +151,7 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
     } catch {
       // safe to ignore
     }
-  }, []);
+  }, [onChange]);
 
   function clearDraw() {
     const canvas = canvasRef.current;
