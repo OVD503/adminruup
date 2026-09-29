@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createGeneratedInvoice } from "@/lib/invoice/service";
-import { invoiceInputSchema } from "@/lib/invoice/validation";
+import { checklistPhotoInputSchema, invoiceInputSchema } from "@/lib/invoice/validation";
 
 export async function GET(request: Request) {
   const session = await getAdminSession();
@@ -60,7 +60,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid invoice data.", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const invoice = await createGeneratedInvoice(parsed.data, session, checklistPhotos);
+    const parsedChecklistPhotos = checklistPhotos === undefined
+      ? undefined
+      : checklistPhotoInputSchema.array().safeParse(checklistPhotos);
+    if (parsedChecklistPhotos && !parsedChecklistPhotos.success) {
+      return NextResponse.json({ error: "Invalid checklist photo data." }, { status: 400 });
+    }
+
+    const invoice = await createGeneratedInvoice(parsed.data, session, parsedChecklistPhotos?.data);
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {
     console.error("Invoice creation error:", error);

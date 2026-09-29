@@ -7,6 +7,15 @@ const nullableString = z
   .nullable()
   .transform((value) => (value ? value : null));
 
+const pdfImageDataUrl = z
+  .string()
+  .regex(/^data:image\/(?:jpeg|png);base64,[A-Za-z0-9+/=\r\n]+$/, "Images embedded in PDFs must be JPEG or PNG data URLs.");
+
+const nullablePdfImageDataUrl = pdfImageDataUrl
+  .optional()
+  .nullable()
+  .transform((value) => (value ? value : null));
+
 export const invoiceItemInputSchema = z.object({
   description: z.string().trim().min(1, "Description is required."),
   hsnCode: nullableString,
@@ -51,13 +60,18 @@ export const invoiceInputSchema = z.object({
   modelApprovalNumber: nullableString,
   categoryOfWM: nullableString,
   certificateValidityYears: nullableString,
-  customerSignature: nullableString,
+  customerSignature: nullablePdfImageDataUrl,
   items: z.array(invoiceItemInputSchema).optional().default([])
 });
 
 export const signatureSettingInputSchema = z.object({
   signatoryName: nullableString,
   signatureDataUrl: nullableString
+});
+
+export const checklistPhotoInputSchema = z.object({
+  label: z.string().trim().min(1),
+  dataUrl: pdfImageDataUrl
 });
 
 export type InvoiceInput = z.infer<typeof invoiceInputSchema>;

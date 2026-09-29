@@ -45,8 +45,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // Validate file type
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      return NextResponse.json({ error: "Only PNG, JPEG, or WebP images are allowed." }, { status: 400 });
+    if (!["image/png", "image/jpeg"].includes(file.type)) {
+      return NextResponse.json({ error: "Only PNG or JPEG images are allowed." }, { status: 400 });
     }
 
     // Validate file size (max 2MB)
@@ -56,7 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // Upload to R2
     const buffer = Buffer.from(await file.arrayBuffer());
-    const extension = file.type === "image/png" ? "png" : file.type === "image/jpeg" ? "jpg" : "webp";
+    const extension = file.type === "image/png" ? "png" : "jpg";
     const r2Key = `signatures/${admin.userId}-${Date.now()}.${extension}`;
     const signatureImageUrl = await uploadToR2(buffer, r2Key, file.type);
 

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { normalizeImageFileForPdf } from "@/lib/pdf-image";
 
 type Admin = {
   id: string;
@@ -94,7 +95,7 @@ export function SignatureManagement() {
 
     try {
       const formData = new FormData();
-      formData.append("signature", file);
+      formData.append("signature", await normalizeImageFileForPdf(file));
       formData.append("signatoryName", sigName);
 
       const res = await fetch(`/api/admins/${adminId}/signature`, {
@@ -182,7 +183,7 @@ export function SignatureManagement() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg,image/heic,image/heif,image/webp"
           className="hidden"
           onChange={handleFileChange}
         />

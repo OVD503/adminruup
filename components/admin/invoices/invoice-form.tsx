@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { SignaturePad } from "@/components/admin/invoices/signature-pad";
 import { calculateInvoiceTotals } from "@/lib/invoice/calculations";
 import { invoiceInputSchema, type InvoiceInput } from "@/lib/invoice/validation";
+import { readPdfCompatibleImage } from "@/lib/pdf-image";
 
 type ProductService = {
   id: string;
@@ -92,11 +93,30 @@ const emptyItem = {
 };
 
 function todayDate() {
-  // Safari-safe: use component parts instead of parsing a date string.
-  // new Date("YYYY-MM-DD") is treated as UTC in Safari which can shift
-  // the date backward for users in positive UTC-offset timezones (e.g. IST).
+  // Use local components so an invoice date never crosses a UTC-day boundary.
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function formatDateForInput(value: unknown) {
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateInput(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return date.getFullYear() === Number(year) && date.getMonth() === Number(month) - 1 && date.getDate() === Number(day)
+    ? date
+    : null;
 }
 
 function money(value: number) {
@@ -112,15 +132,6 @@ export function InvoiceForm() {
   const [whatChangedDetails, setWhatChangedDetails] = useState("");
   const [calibrationPhoto, setCalibrationPhoto] = useState<string | null>(null);
   const [stampPhoto, setStampPhoto] = useState<string | null>(null);
-
-  function readFileAsDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
 
   const form = useForm<InvoiceInput>({
     resolver: zodResolver(invoiceInputSchema) as any,
@@ -492,10 +503,7 @@ export function InvoiceForm() {
         </div>
       </header>
 
-      {/* noValidate prevents Safari from running its own HTML5 validation
-           (which throws "The string did not match the expected pattern" on
-           type="date" and type="number" inputs). react-hook-form + Zod handle
-           all validation instead. */}
+      {/* React Hook Form and Zod provide the validation message consistently across browsers. */}
       <form id="invoice-form" noValidate onSubmit={form.handleSubmit(submit, onInvalid)} className="w-full max-w-full space-y-6 px-1 sm:px-2 py-6">
         <div className="space-y-6">
           {createdInvoice ? (
@@ -558,23 +566,10 @@ export function InvoiceForm() {
                 <Input
                   type="date"
                   className="w-48"
-                  value={(() => {
-                    const d = form.watch("invoiceDate");
-                    if (!d) return "";
-                    const dt = new Date(d);
-                    // Format as YYYY-MM-DD using local date parts (Safari-safe)
-                    const y = dt.getFullYear();
-                    const m = String(dt.getMonth() + 1).padStart(2, "0");
-                    const day = String(dt.getDate()).padStart(2, "0");
-                    return `${y}-${m}-${day}`;
-                  })()}
+                  value={formatDateForInput(form.watch("invoiceDate"))}
                   onChange={(event) => {
-                    const val = event.target.value; // "YYYY-MM-DD"
-                    if (!val) return;
-                    // Safari-safe: parse date parts individually to avoid
-                    // "The string did not match the expected pattern" error
-                    const [y, m, d] = val.split("-").map(Number);
-                    form.setValue("invoiceDate", new Date(y, m - 1, d));
+                    const date = parseDateInput(event.target.value);
+                    if (date) form.setValue("invoiceDate", date, { shouldValidate: true });
                   }}
                 />
               </div>
@@ -638,12 +633,16 @@ export function InvoiceForm() {
                       <td className="py-2.5 px-4">
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/heic,image/heif,image/webp"
                           className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border file:border-slate-300 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) setCalibrationPhoto(await readFileAsDataUrl(file));
-                            else setCalibrationPhoto(null);
+                            try {
+                              setCalibrationPhoto(file ? await readPdfCompatibleImage(file) : null);
+                            } catch (error) {
+                              setCalibrationPhoto(null);
+                              toast.error(error instanceof Error ? error.message : "Could not prepare the calibration photo.");
+                            }
                           }}
                         />
                         {calibrationPhoto && <span className="text-[10px] text-emerald-600 font-medium">✓ Photo ready</span>}
@@ -658,12 +657,16 @@ export function InvoiceForm() {
                       <td className="py-2.5 px-4">
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/heic,image/heif,image/webp"
                           className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border file:border-slate-300 file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) setStampPhoto(await readFileAsDataUrl(file));
-                            else setStampPhoto(null);
+                            try {
+                              setStampPhoto(file ? await readPdfCompatibleImage(file) : null);
+                            } catch (error) {
+                              setStampPhoto(null);
+                              toast.error(error instanceof Error ? error.message : "Could not prepare the stamp photo.");
+                            }
                           }}
                         />
                         {stampPhoto && <span className="text-[10px] text-emerald-600 font-medium">✓ Photo ready</span>}

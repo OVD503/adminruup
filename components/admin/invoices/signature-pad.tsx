@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PenLine, RotateCcw, Save, Upload, X, ImagePlus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { readPdfCompatibleImage } from "@/lib/pdf-image";
 
 type SignaturePadProps = {
   value?: string | null;
@@ -170,16 +172,18 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
   }
 
   // ─── Upload helpers ────────────────────────────────────────────────────────
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
+    try {
+      const dataUrl = await readPdfCompatibleImage(file);
       setUploadPreview(dataUrl);
       onChange(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Signature image conversion failed:", error);
+      clearUpload();
+      toast.error(error instanceof Error ? error.message : "Could not prepare the signature image.");
+    }
   }
 
   function clearUpload() {
@@ -336,11 +340,11 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
             <label className="flex flex-col items-center justify-center h-40 w-full rounded-md border-2 border-dashed border-slate-300 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
               <Upload className="h-8 w-8 text-slate-400 mb-2" />
               <span className="text-sm font-medium text-slate-600">Click to upload signature photo</span>
-              <span className="text-xs text-slate-400 mt-1">PNG · JPG · JPEG · WEBP</span>
+              <span className="text-xs text-slate-400 mt-1">PNG · JPG · JPEG · HEIC · WEBP</span>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp"
+                accept="image/png,image/jpeg,image/jpg,image/heic,image/heif,image/webp"
                 className="sr-only"
                 onChange={handleFileChange}
               />
