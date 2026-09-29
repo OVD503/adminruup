@@ -583,9 +583,6 @@ export function InvoiceForm() {
                   <Input placeholder="Enter Contact Number" {...form.register("proprietorContactNumber")} />
                 </Field>
 
-                <Field label="E-Mail: *">
-                  <Input type="email" placeholder="Enter E-Mail" {...form.register("proprietorEmail")} />
-                </Field>
               </div>
             </CardContent>
           </Card>
