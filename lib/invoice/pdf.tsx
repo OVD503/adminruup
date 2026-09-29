@@ -480,7 +480,7 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
                           {invoice.make ? <Text style={styles.specLine}><Text style={styles.specBold}>Make: </Text>{invoice.make}</Text> : null}
                           <Text style={styles.specLine}><Text style={styles.specBold}>Capacity: </Text>{invoice.capacity || item.description}</Text>
                           <Text style={styles.specLine}><Text style={styles.specBold}>Quantity: </Text>{item.quantity} {item.unit}</Text>
-                          {invoice.model ? <Text style={styles.specLine}><Text style={styles.specBold}>Model: </Text>{invoice.model}</Text> : null}
+                          {invoice.model ? <Text style={styles.specLine}><Text style={styles.specBold}>MOD APP: </Text>{invoice.model}</Text> : null}
                           {invoice.accuracyClass ? <Text style={styles.specLine}><Text style={styles.specBold}>Class: </Text>{invoice.accuracyClass}</Text> : null}
                           {invoice.serialNumber ? <Text style={styles.specLine}><Text style={styles.specBold}>Serial No: </Text>{invoice.serialNumber}</Text> : null}
                         </>
@@ -524,7 +524,7 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
                 </Text>
                 <View style={[styles.tableBodyCell, { width: "41%" }]}>
                   <Text style={styles.specLine}><Text style={styles.specBold}>Capacity: </Text>{invoice.capacity || "-"}</Text>
-                  <Text style={styles.specLine}><Text style={styles.specBold}>Model: </Text>{invoice.model || "-"}</Text>
+                  <Text style={styles.specLine}><Text style={styles.specBold}>MOD APP: </Text>{invoice.model || "-"}</Text>
                   <Text style={styles.specLine}><Text style={styles.specBold}>Class: </Text>{invoice.accuracyClass || "-"}</Text>
                   <Text style={styles.specLine}><Text style={styles.specBold}>Serial No: </Text>{invoice.serialNumber || "-"}</Text>
                 </View>

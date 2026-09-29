@@ -36,6 +36,7 @@ interface FeeCalculationRow {
   minValue?: string;
   eValue?: string;
   model?: string;
+  srNo?: string;
   machineCategory?: string;
   accuracyClass?: string;
   denomination: string;
@@ -406,7 +407,8 @@ export function InvoiceForm() {
           row.subType && row.subType !== "Select Sub Type" ? `Sub-Type: ${row.subType}` : "",
           row.make ? `Make: ${row.make}` : "",
           row.machineCategory ? `Model Type: ${row.machineCategory}` : "",
-          row.model ? `Model: ${row.model}` : "",
+          row.model ? `MOD APP: ${row.model}` : "",
+          row.srNo ? `SR.NO: ${row.srNo}` : "",
           row.noOfMachines ? `No. of Machines: ${row.noOfMachines}` : "",
           row.maxValue ? `Max Value: ${row.maxValue} kg` : "",
           row.minValue ? `Min Value: ${row.minValue} g` : "",
@@ -799,15 +801,27 @@ export function InvoiceForm() {
                             </select>
                           </div>
 
-                          {/* Model */}
+                          {/* MOD APP */}
                           <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">Model:</span>
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">MOD APP:</span>
                             <input
                               type="text"
                               value={row.model || ""}
                               onChange={(e) => updateFeeRow(index, "model", e.target.value)}
                               className="w-24 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                              placeholder="Enter Model"
+                              placeholder="Model Approval"
+                            />
+                          </div>
+
+                          {/* SR.NO */}
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">SR.NO:</span>
+                            <input
+                              type="text"
+                              value={row.srNo || ""}
+                              onChange={(e) => updateFeeRow(index, "srNo", e.target.value)}
+                              className="w-24 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                              placeholder="Serial No"
                             />
                           </div>
 
