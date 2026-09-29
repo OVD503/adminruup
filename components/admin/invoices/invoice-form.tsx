@@ -467,7 +467,17 @@ export function InvoiceForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const data = await response.json();
+      let data: any = {};
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        if (response.status === 413 || text.toLowerCase().includes("request entity too large")) {
+          throw new Error("The uploaded image files are too large. Please select smaller images.");
+        }
+        throw new Error(text || `Server error (${response.status})`);
+      }
       if (!response.ok) throw new Error(data.error || "Failed to generate invoice.");
       setCreatedInvoice(data);
       toast.success("Invoice Generated Successfully");

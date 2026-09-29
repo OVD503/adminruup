@@ -17,53 +17,78 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-async function rasterizeAsJpeg(file: File): Promise<string> {
+/**
+ * Resizes and rasterizes an image file onto a canvas to ensure
+ * lightweight base64 output (max dimension 1200px, JPEG quality 0.75),
+ * preventing Vercel payload size limits (413 Request Entity Too Large).
+ */
+export async function rasterizeAndCompressImage(file: File, maxDimension = 1200, quality = 0.75): Promise<string> {
   const objectUrl = URL.createObjectURL(file);
 
   try {
     const image = await new Promise<HTMLImageElement>((resolve, reject) => {
       const element = new Image();
       element.onload = () => resolve(element);
-      element.onerror = () => reject(new Error("This image cannot be converted. Please use a JPEG or PNG image."));
+      element.onerror = () => reject(new Error("This image cannot be processed. Please select a valid image file."));
       element.src = objectUrl;
     });
 
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const context = canvas.getContext("2d");
-    if (!context || !canvas.width || !canvas.height) {
-      throw new Error("This image cannot be converted. Please use a JPEG or PNG image.");
+    let width = image.naturalWidth || image.width;
+    let height = image.naturalHeight || image.height;
+    if (!width || !height) {
+      throw new Error("Could not determine image dimensions.");
     }
 
-    // JPEG has no alpha channel; a white background preserves transparent signatures.
+    if (width > maxDimension || height > maxDimension) {
+      if (width > height) {
+        height = Math.round((height * maxDimension) / width);
+        width = maxDimension;
+      } else {
+        width = Math.round((width * maxDimension) / height);
+        height = maxDimension;
+      }
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Could not process image on canvas.");
+    }
+
+    // JPEG has no alpha channel; a white background preserves transparent elements.
     context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0);
-    return canvas.toDataURL("image/jpeg", 0.92);
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL("image/jpeg", quality);
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
 }
 
 /**
- * Produces the JPEG/PNG data URLs supported by @react-pdf/renderer.
- * Safari commonly supplies HEIC files from Photos; those must be rasterized
- * before they are included in a server-generated PDF.
+ * Produces JPEG data URLs supported by @react-pdf/renderer while keeping image size small.
  */
 export async function readPdfCompatibleImage(file: File): Promise<string> {
   if (!file.type.startsWith("image/")) {
     throw new Error("Please select an image file.");
   }
 
-  return PDF_IMAGE_TYPES.has(file.type) ? readFileAsDataUrl(file) : rasterizeAsJpeg(file);
+  try {
+    return await rasterizeAndCompressImage(file, 1200, 0.75);
+  } catch (err) {
+    if (PDF_IMAGE_TYPES.has(file.type)) {
+      return readFileAsDataUrl(file);
+    }
+    throw err instanceof Error ? err : new Error("Could not process image.");
+  }
 }
 
 export async function normalizeImageFileForPdf(file: File): Promise<File> {
-  if (PDF_IMAGE_TYPES.has(file.type)) return file;
-
   const dataUrl = await readPdfCompatibleImage(file);
   const bytes = await (await fetch(dataUrl)).blob();
   const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
   return new File([bytes], `${baseName}.jpg`, { type: "image/jpeg" });
 }
+
