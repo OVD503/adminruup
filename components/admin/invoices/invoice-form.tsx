@@ -83,6 +83,44 @@ const MAX_TO_MIN_MAP: Record<string, { min: string; e: string }[]> = {
   ]
 };
 
+const FIRM_TYPE_OPTIONS = [
+  "Auto Rickshaw / Taxi Meters",
+  "Bars & Restaurants",
+  "Cement & Building Materials",
+  "Cinema Theatres",
+  "Commercial Scales",
+  "Cotton & Ginning Mills",
+  "Dispensing Pumps (Petrol / Diesel)",
+  "Electronics & Electrical Goods",
+  "Fertilizer & Pesticides",
+  "Fish & Poultry",
+  "Flour Mills",
+  "Gold / Jewellery & Bullion",
+  "Hardware & Sanitaryware",
+  "Hotel & Restaurants",
+  "Kirana & General Stores",
+  "L.P Gas",
+  "Milk & Other Dairy Products",
+  "Mineral Water & Packaged Drinking Water",
+  "MLS Points",
+  "Note books / Stationary",
+  "Oil Mills",
+  "Railway Stations/Airlines/Postal Services",
+  "Regulated Markets",
+  "Rice Mills",
+  "Roller Flour Mills",
+  "Shopping Malls",
+  "Spirituous Liquor including Beer",
+  "Steel Traders",
+  "Sugar & Khandsari",
+  "Super Markets",
+  "Sweet Shops",
+  "Tank Trucks",
+  "Textiles & Readymade Garments",
+  "Tobacco & Cigarette",
+  "Other"
+];
+
 const emptyItem = {
   description: "",
   hsnCode: "",
@@ -132,6 +170,8 @@ export function InvoiceForm() {
   const [whatChangedDetails, setWhatChangedDetails] = useState("");
   const [calibrationPhoto, setCalibrationPhoto] = useState<string | null>(null);
   const [stampPhoto, setStampPhoto] = useState<string | null>(null);
+  const [isOtherFirmType, setIsOtherFirmType] = useState(false);
+  const [customFirmType, setCustomFirmType] = useState("");
 
   const form = useForm<InvoiceInput>({
     resolver: zodResolver(invoiceInputSchema) as any,
@@ -337,7 +377,7 @@ export function InvoiceForm() {
   }
 
   const totalVerificationFee = useMemo(
-    () => feeRows.reduce((acc, row) => acc + (Number(row.verificationFee) || 0) * (Number(row.quantity) || 1), 0),
+    () => feeRows.reduce((acc, row) => acc + (Number(row.verificationFee) || 0) * (Number(row.noOfMachines) || 1), 0),
     [feeRows]
   );
 
@@ -346,9 +386,10 @@ export function InvoiceForm() {
       feeRows.reduce(
         (acc, row) =>
           acc +
-          (Number(row.cgst) || 0) +
-          (Number(row.sgst) || 0) +
-          (Number(row.serviceFee) || 0),
+          ((Number(row.cgst) || 0) +
+            (Number(row.sgst) || 0) +
+            (Number(row.serviceFee) || 0)) *
+            (Number(row.noOfMachines) || 1),
         0
       ),
     [feeRows]
@@ -542,7 +583,39 @@ export function InvoiceForm() {
             <CardContent className="space-y-4 pt-5">
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                 <Field label="Firm Type:">
-                  <Input placeholder="e.g. Proprietary / Pvt Ltd" {...form.register("firmType")} />
+                  <select
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    value={isOtherFirmType ? "Other" : form.watch("firmType") || ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "Other") {
+                        setIsOtherFirmType(true);
+                        form.setValue("firmType", customFirmType);
+                      } else {
+                        setIsOtherFirmType(false);
+                        form.setValue("firmType", val);
+                      }
+                    }}
+                  >
+                    <option value="">--Select Firm Type--</option>
+                    {FIRM_TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  {isOtherFirmType && (
+                    <Input
+                      type="text"
+                      placeholder="Enter Firm Type"
+                      className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 mt-2"
+                      value={customFirmType}
+                      onChange={(e) => {
+                        setCustomFirmType(e.target.value);
+                        form.setValue("firmType", e.target.value);
+                      }}
+                    />
+                  )}
                 </Field>
                 <Field label="Firm Name: *" error={form.formState.errors.firmName?.message}>
                   <Input placeholder="Firm Name" {...form.register("firmName")} />
@@ -777,9 +850,8 @@ export function InvoiceForm() {
                     <th className="p-2.5 min-w-[130px]">Type<br />(2)</th>
                     <th className="p-2.5 min-w-[130px]">Sub Type<br />(3)</th>
                     <th className="p-2.5 min-w-[280px]">Extra Inputs<br />(4)</th>
-                    <th className="p-2.5 w-20">Quantity<br />(5)</th>
-                    <th className="p-2.5 w-24">Whether new article?<br />(6)</th>
-                    <th className="p-2.5 min-w-[180px]">CGST / SGST / Service Fee / Total Rs.<br />(7)</th>
+                    <th className="p-2.5 w-24">Whether new article?<br />(5)</th>
+                    <th className="p-2.5 min-w-[180px]">CGST / SGST / Service Fee / Total Rs.<br />(6)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 bg-white text-slate-800">
@@ -962,16 +1034,6 @@ export function InvoiceForm() {
                         </div>
                       </td>
                       <td className="p-2.5">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={row.quantity}
-                          onChange={(e) => updateFeeRow(index, "quantity", Number(e.target.value) || 0)}
-                          className="w-full h-8 rounded border border-slate-300 px-2 text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="p-2.5">
                         <select
                           value={row.isNewArticle}
                           onChange={(e) => updateFeeRow(index, "isNewArticle", e.target.value)}
@@ -1035,7 +1097,7 @@ export function InvoiceForm() {
                         <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-200">
                           <span className="text-slate-800 font-bold">Total:</span>
                           <span className="w-20 text-right font-bold text-slate-800 text-xs">
-                            {((Number(row.serviceFee) || 0) + (Number(row.cgst) || 0) + (Number(row.sgst) || 0)).toFixed(2)}
+                            {(((Number(row.serviceFee) || 0) + (Number(row.cgst) || 0) + (Number(row.sgst) || 0)) * (Number(row.noOfMachines) || 1)).toFixed(2)}
                           </span>
                         </div>
                       </td>
