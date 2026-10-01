@@ -173,6 +173,9 @@ export function InvoiceForm() {
   const [isOtherFirmType, setIsOtherFirmType] = useState(false);
   const [customFirmType, setCustomFirmType] = useState("");
   const [gstApplicable, setGstApplicable] = useState<"applicable" | "non-applicable">("non-applicable");
+  const [showWaModal, setShowWaModal] = useState(false);
+  const [waMobile, setWaMobile] = useState("");
+  const [waMobileError, setWaMobileError] = useState("");
 
   const form = useForm<InvoiceInput>({
     resolver: zodResolver(invoiceInputSchema) as any,
@@ -570,7 +573,13 @@ export function InvoiceForm() {
                   <>
                     <a href={createdInvoice.pdfUrl} target="_blank" rel="noreferrer"><Button type="button">View PDF</Button></a>
                     <a href={createdInvoice.pdfUrl} download><Button type="button" variant="outline">Download PDF</Button></a>
-                    <Button type="button" variant="outline" onClick={() => navigator.clipboard.writeText(createdInvoice.pdfUrl || "")}>Copy PDF Link</Button>
+                    <Button
+                      type="button"
+                      className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
+                      onClick={() => { setWaMobile(""); setWaMobileError(""); setShowWaModal(true); }}
+                    >
+                      Send to Customer
+                    </Button>
                   </>
                 ) : null}
                 <Button type="button" variant="outline" onClick={() => window.location.reload()}>Create New Invoice</Button>
@@ -1185,6 +1194,83 @@ export function InvoiceForm() {
           </Card>
         </div>
       </form>
+      {/* WhatsApp Send Modal */}
+      {showWaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-green-100 text-2xl">📲</div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Send Invoice to Customer</h2>
+                <p className="text-xs text-slate-500">via WhatsApp</p>
+              </div>
+              <button
+                className="ml-auto text-slate-400 hover:text-slate-700 text-xl font-bold leading-none"
+                onClick={() => setShowWaModal(false)}
+              >✕</button>
+            </div>
+
+            {/* Invoice preview */}
+            <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-700 space-y-1">
+              <p><span className="font-semibold">Invoice:</span> {createdInvoice?.invoiceNumber}</p>
+              <p className="truncate text-xs text-slate-400">{createdInvoice?.pdfUrl}</p>
+            </div>
+
+            {/* Mobile input */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">Customer WhatsApp Number</label>
+              <div className="flex gap-2">
+                <span className="flex items-center px-3 rounded-md border border-slate-200 bg-slate-50 text-sm text-slate-600 font-medium">+91</span>
+                <Input
+                  type="tel"
+                  maxLength={10}
+                  placeholder="Enter 10-digit mobile number"
+                  value={waMobile}
+                  onChange={(e) => {
+                    setWaMobile(e.target.value.replace(/\D/g, ""));
+                    setWaMobileError("");
+                  }}
+                  className="flex-1"
+                />
+              </div>
+              {waMobileError && <p className="text-xs text-red-600">{waMobileError}</p>}
+            </div>
+
+            {/* Message preview */}
+            <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-xs text-slate-700 space-y-1 leading-relaxed">
+              <p className="font-semibold text-green-800 mb-1">Message Preview:</p>
+              <p>Dear Customer, please find your invoice {createdInvoice?.invoiceNumber} from Vishwakarma Services attached below.</p>
+              <p>📄 Invoice: {createdInvoice?.pdfUrl}</p>
+              <p>Thank you for choosing our services. For any queries or assistance, please feel free to contact us.</p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowWaModal(false)}
+              >Cancel</Button>
+              <Button
+                type="button"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  if (!waMobile || waMobile.length !== 10) {
+                    setWaMobileError("Please enter a valid 10-digit mobile number.");
+                    return;
+                  }
+                  const msg = `Dear Customer, please find your invoice ${createdInvoice?.invoiceNumber} from Vishwakarma Services attached below.\n\n📄 Invoice: ${createdInvoice?.pdfUrl}\n\nThank you for choosing our services. For any queries or assistance, please feel free to contact us.`;
+                  const waUrl = `https://wa.me/91${waMobile}?text=${encodeURIComponent(msg)}`;
+                  window.open(waUrl, "_blank");
+                  setShowWaModal(false);
+                }}
+              >Send via WhatsApp</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
