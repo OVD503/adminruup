@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#FFF9C4",
     borderBottom: "1 dotted #CA8A04",
-    minHeight: 45
+    minHeight: 28
   },
   tableBodyCell: {
     padding: 4,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     padding: 6,
     backgroundColor: "#FFF9C4",
     border: "1.5 solid #CA8A04",
-    marginBottom: 8
+    marginBottom: 4
   },
   grandTotalText: {
     fontSize: 9.5,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     fontWeight: 700
   },
   footerSignatures: {
-    marginTop: 10,
+    marginTop: 4,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end"
@@ -249,9 +249,8 @@ const styles = StyleSheet.create({
     marginBottom: 2
   },
   checklistSection: {
-    marginTop: 8,
+    marginTop: 4,
     border: "1.5 solid #000000",
-    flexGrow: 1,
     display: "flex",
     flexDirection: "column"
   },
@@ -288,11 +287,11 @@ const styles = StyleSheet.create({
   },
   checklistPhotoImg: {
     width: "100%",
-    height: 180,
+    height: 100,
     objectFit: "contain"
   },
   checklistPhotoEmpty: {
-    height: 180,
+    height: 100,
     width: "100%"
   }
 });
@@ -366,10 +365,10 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
           {/* Header Details (Reference Image 2) */}
           <View style={styles.headerBox}>
             <Text style={styles.govTitle}>GOVERNMENT APPROVED TEST CENTRE</Text>
-            <Text style={styles.subTitleText}>
+            <Text style={[styles.subTitleText, { color: "#CC0000" }]}>
               (Approved : Department of consumer affairs, Legal metrology Division)
             </Text>
-            <Text style={styles.subTitleText}>
+            <Text style={[styles.subTitleText, { color: "#CC0000" }]}>
               (under section 24 of the legal metrology Act,2009)
             </Text>
             <Text style={styles.gatcNo}>(GATC) No. IND/GATC/TS/26/39</Text>
@@ -379,9 +378,9 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
             </Text>
             <View style={styles.contactRow}>
               <Text>GSTIN: 36AVEPG8701H1ZP</Text>
-              <Text>Phone : +91-9849676054</Text>
+              <Text>Phone : +91-9848715022</Text>
             </View>
-            <Text style={styles.complaintMobile}>Complaint Mobile No 9849676054</Text>
+            <Text style={styles.complaintMobile}>Complaint No. 9849741617</Text>
           </View>
 
           {/* Invoice Banner */}
@@ -430,8 +429,12 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
                 <Text style={[styles.metaVal, styles.bold]}>{address}</Text>
               </View>
               <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Mobile / GSTIN:</Text>
-                <Text style={[styles.metaVal, styles.bold]}>{mobile} / {gstin}</Text>
+                <Text style={styles.metaLabel}>Mobile:</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{mobile}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>GSTIN:</Text>
+                <Text style={[styles.metaVal, styles.bold]}>{gstin && gstin !== "-" ? gstin : "NA"}</Text>
               </View>
             </View>
           </View>
@@ -442,9 +445,9 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
               <Text style={[styles.tableHeaderCell, { width: "5%" }]}>S.NO</Text>
               <Text style={[styles.tableHeaderCell, { width: "24%" }]}>Location of the weights/ measures</Text>
               <Text style={[styles.tableHeaderCell, { width: "41%" }]}>Details of weights/measures/weighing/Measuring instruments</Text>
-              <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Verification Fee Rs.</Text>
-              <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Charges Rs.</Text>
-              <Text style={[styles.tableHeaderCell, { width: "10%", borderRightWidth: 0 }]}>Total Fee Rs.</Text>
+              <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Qty.</Text>
+              <Text style={[styles.tableHeaderCell, { width: "10%" }]}>Rate Rs.</Text>
+              <Text style={[styles.tableHeaderCell, { width: "10%", borderRightWidth: 0 }]}>Amount Rs.</Text>
             </View>
 
             {invoice.items && invoice.items.length > 0 ? (
@@ -487,31 +490,19 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
                       )}
                     </View>
 
-                    {/* Verification Fee = pre-tax service fee */}
+                    {/* Qty */}
+                    <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "center", fontWeight: 700 }]}>
+                      {item.quantity}
+                    </Text>
+
+                    {/* Rate */}
                     <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700 }]}>
                       {money(item.rate)}
                     </Text>
 
-                    {/* Charges = CGST + SGST breakdown */}
-                    <View style={[styles.tableBodyCell, { width: "10%" }]}>
-                      {(() => {
-                        const tb = taxBreakdown(item.rate, item.taxRate);
-                        if (item.taxRate > 0) {
-                          return (
-                            <>
-                              <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>Svc:{money(tb.svc)}</Text>
-                              <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>CGST:{money(tb.cgst)}</Text>
-                              <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>SGST:{money(tb.sgst)}</Text>
-                            </>
-                          );
-                        }
-                        return <Text style={{ textAlign: "right" }}>{money(0)}</Text>;
-                      })()}
-                    </View>
-
-                    {/* Total Fee = service fee + GST */}
+                    {/* Amount = Qty × Rate */}
                     <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700, borderRightWidth: 0 }]}>
-                      {money(item.amount || taxBreakdown(item.rate, item.taxRate).total)}
+                      {money(item.quantity * item.rate)}
                     </Text>
                   </View>
                 );
@@ -528,25 +519,31 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
                   <Text style={styles.specLine}><Text style={styles.specBold}>Class: </Text>{invoice.accuracyClass || "-"}</Text>
                   <Text style={styles.specLine}><Text style={styles.specBold}>Serial No: </Text>{invoice.serialNumber || "-"}</Text>
                 </View>
+                {/* Qty */}
+                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "center", fontWeight: 700 }]}>1</Text>
+                {/* Rate */}
                 <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700 }]}>{money(invoice.subtotal)}</Text>
-                <View style={[styles.tableBodyCell, { width: "10%" }]}>
-                  <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>Svc:{money(invoice.subtotal)}</Text>
-                  <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>CGST:{money(invoice.cgstAmount)}</Text>
-                  <Text style={[styles.specLine, { textAlign: "right", fontSize: 8 }]}>SGST:{money(invoice.sgstAmount)}</Text>
-                </View>
-                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700, borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
+                {/* Amount */}
+                <Text style={[styles.tableBodyCell, { width: "10%", textAlign: "right", fontWeight: 700, borderRightWidth: 0 }]}>{money(invoice.subtotal)}</Text>
               </View>
             )}
 
-            {/* Total Summary Row */}
+            {/* Summary rows: STC / CGST / SGST / TOTAL */}
+            <View style={[styles.totalRow, { backgroundColor: "#FFF9C4" }]}>
+              <Text style={[styles.totalCell, { width: "70%", textAlign: "right", fontSize: 9, borderRightWidth: 0 }]}>STC (Stamping Fee/Charge):</Text>
+              <Text style={[styles.totalCell, { width: "30%", textAlign: "right", fontSize: 9, borderRightWidth: 0 }]}>{money(invoice.subtotal)}</Text>
+            </View>
+            <View style={[styles.totalRow, { backgroundColor: "#FFF9C4" }]}>
+              <Text style={[styles.totalCell, { width: "70%", textAlign: "right", fontSize: 9, borderRightWidth: 0 }]}>CGST:</Text>
+              <Text style={[styles.totalCell, { width: "30%", textAlign: "right", fontSize: 9, borderRightWidth: 0 }]}>{money(invoice.cgstAmount)}</Text>
+            </View>
+            <View style={[styles.totalRow, { backgroundColor: "#FFF9C4" }]}>
+              <Text style={[styles.totalCell, { width: "70%", textAlign: "right", fontSize: 9, borderRightWidth: 0 }]}>SGST:</Text>
+              <Text style={[styles.totalCell, { width: "30%", textAlign: "right", fontSize: 9, borderRightWidth: 0 }]}>{money(invoice.sgstAmount)}</Text>
+            </View>
             <View style={styles.totalRow}>
-              <Text style={[styles.totalCell, { width: "70%", textAlign: "center", fontSize: 11 }]}>Total</Text>
-              <Text style={[styles.totalCell, { width: "10%", textAlign: "right" }]}>{money(invoice.subtotal)}</Text>
-              <View style={[styles.totalCell, { width: "10%" }]}>
-                <Text style={[{ fontSize: 7.5, textAlign: "right", color: "#000000", fontWeight: 700 }]}>CGST:{money(invoice.cgstAmount)}</Text>
-                <Text style={[{ fontSize: 7.5, textAlign: "right", color: "#000000", fontWeight: 700 }]}>SGST:{money(invoice.sgstAmount)}</Text>
-              </View>
-              <Text style={[styles.totalCell, { width: "10%", textAlign: "right", fontSize: 11, borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
+              <Text style={[styles.totalCell, { width: "70%", textAlign: "right", fontSize: 11, borderRightWidth: 0 }]}>TOTAL:</Text>
+              <Text style={[styles.totalCell, { width: "30%", textAlign: "right", fontSize: 11, borderRightWidth: 0 }]}>{money(invoice.totalAmount)}</Text>
             </View>
           </View>
 

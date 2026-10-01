@@ -49,6 +49,7 @@ export const invoiceInputSchema = z.object({
   clientName: nullableString,
   clientCompanyName: nullableString,
   clientAddress: nullableString,
+  gstApplicable: z.enum(["applicable", "non-applicable"]).optional().default("non-applicable"),
   clientGSTIN: nullableString,
   clientMobile: nullableString,
   typeOfInstrument: nullableString,

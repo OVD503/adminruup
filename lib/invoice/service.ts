@@ -34,7 +34,10 @@ export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSe
 
   const clientName = input.firmName || input.clientName || "";
   const clientAddress = input.clientAddress || [input.doorNo, input.street, input.locality, input.pinCode].filter(Boolean).join(", ");
-  const clientGSTIN = input.clientGSTIN || (input.personUniqueNumber ? (input.personUniqueNumberType ? `${input.personUniqueNumberType}: ${input.personUniqueNumber}` : input.personUniqueNumber) : null);
+  const gstApplicable = input.gstApplicable === "applicable";
+  const clientGSTIN = gstApplicable
+    ? (input.clientGSTIN || (input.personUniqueNumber ? (input.personUniqueNumberType ? `${input.personUniqueNumberType}: ${input.personUniqueNumber}` : input.personUniqueNumber) : null))
+    : null;
   const clientMobile = input.contactPersonNumber || input.clientMobile || null;
 
   const invoice = await prisma.invoice.create({

@@ -172,6 +172,7 @@ export function InvoiceForm() {
   const [stampPhoto, setStampPhoto] = useState<string | null>(null);
   const [isOtherFirmType, setIsOtherFirmType] = useState(false);
   const [customFirmType, setCustomFirmType] = useState("");
+  const [gstApplicable, setGstApplicable] = useState<"applicable" | "non-applicable">("non-applicable");
 
   const form = useForm<InvoiceInput>({
     resolver: zodResolver(invoiceInputSchema) as any,
@@ -199,6 +200,7 @@ export function InvoiceForm() {
       clientName: "",
       clientCompanyName: "",
       clientAddress: "",
+      gstApplicable: "non-applicable",
       clientGSTIN: "",
       clientMobile: "",
       typeOfInstrument: "",
@@ -644,6 +646,39 @@ export function InvoiceForm() {
               </div>
 
 
+              {/* GST Section */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="bg-[#fde8d7] border-b border-[#fcd5b5] px-4 py-2 text-sm font-bold text-[#d96b27]">GST Details</div>
+                <div className="p-4 space-y-3">
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                    <Field label="GST:">
+                      <select
+                        className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                        value={gstApplicable}
+                        onChange={(e) => {
+                          const val = e.target.value as "applicable" | "non-applicable";
+                          setGstApplicable(val);
+                          form.setValue("gstApplicable", val);
+                          if (val === "non-applicable") form.setValue("clientGSTIN", "");
+                        }}
+                      >
+                        <option value="non-applicable">Non-Applicable</option>
+                        <option value="applicable">Applicable</option>
+                      </select>
+                    </Field>
+                    {gstApplicable === "applicable" && (
+                      <Field label="GSTIN Number:" error={form.formState.errors.clientGSTIN?.message}>
+                        <Input
+                          placeholder="Enter GSTIN Number"
+                          {...form.register("clientGSTIN")}
+                          className="uppercase"
+                        />
+                      </Field>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-sm font-medium text-slate-600">Invoice Date:</span>
                 <Input
@@ -866,7 +901,7 @@ export function InvoiceForm() {
                         >
                           <option value="Select Type">Select Type</option>
                           <option value="Automatic Weighing Instrument (AWI)">Automatic Weighing Instrument (AWI)</option>
-                          <option value="Non-Automatic weighing instruments class III & IV (NAWI)">Non-Automatic weighing instruments class III &amp; IV (NAWI)</option>
+                          <option value="Non-Automatic weighing instruments class III (NAWI)">Non-Automatic weighing instruments class III (NAWI)</option>
                         </select>
                       </td>
                       <td className="p-2.5">
@@ -1017,17 +1052,6 @@ export function InvoiceForm() {
                                   className="h-3 w-3 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                 />
                                 class III
-                              </label>
-                              <label className="flex items-center gap-1 cursor-pointer text-[11px] text-slate-700">
-                                <input
-                                  type="radio"
-                                  name={`class-${row.id}`}
-                                  value="class IV"
-                                  checked={row.accuracyClass === "class IV"}
-                                  onChange={(e) => updateFeeRow(index, "accuracyClass", e.target.value)}
-                                  className="h-3 w-3 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                />
-                                class IV
                               </label>
                             </div>
                           </div>
