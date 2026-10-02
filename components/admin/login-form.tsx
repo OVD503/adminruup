@@ -147,16 +147,18 @@ export function LoginForm() {
             </Button>
           </div>
 
-          {/* Footer hint */}
-          <div className="mt-6 rounded-lg border border-white/5 bg-white/[0.02] p-3">
-            <p className="text-center text-xs text-slate-500 leading-relaxed">
-              <span className="text-slate-400 font-medium">SuperAdmin</span> — Firebase connected account
-              <br />
-              <span className="text-slate-400 font-medium">Admin</span> — Use ID & password provided by SuperAdmin
-            </p>
-          </div>
+
+
         </div>
+
+        {/* Gradient bottom border accent */}
+        <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
       </form>
+
+      {/* Powered by */}
+      <p className="absolute bottom-5 text-center text-[11px] text-slate-600 tracking-wide select-none">
+        powered by <span className="text-slate-500 font-medium">voidrax digital</span>
+      </p>
     </main>
   );
 }

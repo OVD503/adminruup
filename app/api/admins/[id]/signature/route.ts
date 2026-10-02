@@ -15,10 +15,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Access denied." }, { status: 403 });
   }
 
-  const setting = await prisma.signatureSetting.findUnique({ where: { adminUserId: id } });
+  const [setting, adminUser] = await Promise.all([
+    prisma.signatureSetting.findUnique({ where: { adminUserId: id } }),
+    prisma.adminUser.findUnique({ where: { id }, select: { displayName: true } }),
+  ]);
 
   return NextResponse.json({
-    signatoryName: setting?.signatoryName || "Gottimukkala Shyam Sunder",
+    signatoryName: setting?.signatoryName || adminUser?.displayName || "",
     signatureImageUrl: setting?.signatureImageUrl || null,
   });
 }
@@ -38,7 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const formData = await request.formData();
     const file = formData.get("signature") as File | null;
-    const signatoryName = (formData.get("signatoryName") as string)?.trim() || "Gottimukkala Shyam Sunder";
+    const signatoryName = (formData.get("signatoryName") as string)?.trim() || admin.displayName;
 
     if (!file || !file.size) {
       return NextResponse.json({ error: "Signature image file is required." }, { status: 400 });
@@ -98,7 +101,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 }
 
-// DELETE /api/admins/[id]/signature — SuperAdmin deletes signature for an admin
+// PATCH /api/admins/[id]/signature — SuperAdmin updates only the signatory name
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getAdminSession();
+  if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (session.role !== "SUPER_ADMIN") return NextResponse.json({ error: "Super Admin access required." }, { status: 403 });
+
+  const { id } = await params;
+
+  const admin = await prisma.adminUser.findFirst({ where: { id, role: "ADMIN" } });
+  if (!admin) return NextResponse.json({ error: "Admin account not found." }, { status: 404 });
+
+  try {
+    const body = await request.json() as { signatoryName?: string };
+    const signatoryName = body.signatoryName?.trim();
+    if (!signatoryName) return NextResponse.json({ error: "signatoryName is required." }, { status: 400 });
+
+    const setting = await prisma.signatureSetting.upsert({
+      where: { adminUserId: id },
+      create: { adminUserId: id, signatoryName, signatureImageUrl: null },
+      update: { signatoryName },
+    });
+
+    return NextResponse.json({
+      signatoryName: setting.signatoryName,
+      signatureImageUrl: setting.signatureImageUrl,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Could not update name." },
+      { status: 500 },
+    );
+  }
+}
+
+
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

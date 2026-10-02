@@ -90,7 +90,7 @@ export function SignatureManagement() {
     event.target.value = "";
 
     const adminId = selectedAdminId;
-    const sigName = signatures[adminId]?.signatoryName || "Gottimukkala Shyam Sunder";
+    const sigName = signatures[adminId]?.signatoryName || admins.find(a => a.id === adminId)?.displayName || "";
     setUploadingFor(adminId);
 
     try {
@@ -135,34 +135,28 @@ export function SignatureManagement() {
   }
 
   async function saveSignatoryName(adminId: string) {
-    const name = tempName.trim() || "Gottimukkala Shyam Sunder";
+    const name = tempName.trim() || admins.find(a => a.id === adminId)?.displayName || "";
     setEditingNameFor(null);
 
     try {
-      const sig = signatures[adminId];
-      if (!sig?.signatureImageUrl) {
-        // No image uploaded yet — just update local state
-        setSignatures((prev) => ({
-          ...prev,
-          [adminId]: { signatoryName: name, signatureImageUrl: null },
-        }));
-        return;
-      }
+      const res = await fetch(`/api/admins/${adminId}/signature`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signatoryName: name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update name.");
 
-      // Re-upload with updated name (we send the existing image URL as a workaround)
-      // Actually, let's create a simple name-only update by posting FormData with just the name
-      // We need to download the existing image and re-upload... or add a PATCH endpoint.
-      // Simpler: just update the name by posting without a file — let's adjust the API to handle this.
-      // For now, let's update locally
       setSignatures((prev) => ({
         ...prev,
-        [adminId]: { ...prev[adminId], signatoryName: name },
+        [adminId]: { ...prev[adminId], signatoryName: data.signatoryName },
       }));
       toast.success("Signatory name updated.");
-    } catch {
-      toast.error("Could not update name.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update name.");
     }
   }
+
 
   return (
     <main className="erp-shell min-h-screen px-6 py-8">
@@ -275,7 +269,7 @@ export function SignatureManagement() {
                       ) : (
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-slate-800">
-                            {sig?.signatoryName || "Gottimukkala Shyam Sunder"}
+                            {sig?.signatoryName || admin.displayName}
                           </span>
                           <Button
                             size="icon"
@@ -285,7 +279,7 @@ export function SignatureManagement() {
                             onClick={() => {
                               setEditingNameFor(admin.id);
                               setTempName(
-                                sig?.signatoryName || "Gottimukkala Shyam Sunder",
+                                sig?.signatoryName || admin.displayName,
                               );
                             }}
                           >

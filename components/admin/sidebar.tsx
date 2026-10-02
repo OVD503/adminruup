@@ -136,6 +136,15 @@ export function Sidebar({ session }: { session: AdminSession | null }) {
               );
             })}
           </nav>
+
+          {/* Close sidebar button — mobile & tablet only */}
+          <button
+            onClick={() => setIsOpen(false)}
+            className="md:hidden mt-4 flex w-full items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          >
+            <X className="h-4 w-4" />
+            Close Menu
+          </button>
         </div>
 
         {/* Sidebar Footer */}

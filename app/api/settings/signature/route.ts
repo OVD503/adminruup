@@ -8,10 +8,13 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
   if (session.role !== "ADMIN") return NextResponse.json({ error: "Only Admin accounts can view invoice signatures." }, { status: 403 });
-  const setting = await prisma.signatureSetting.findUnique({ where: { adminUserId: session.id } });
+  const [setting, adminUser] = await Promise.all([
+    prisma.signatureSetting.findUnique({ where: { adminUserId: session.id } }),
+    prisma.adminUser.findUnique({ where: { id: session.id }, select: { displayName: true } }),
+  ]);
 
   return NextResponse.json({
-    signatoryName: setting?.signatoryName || "Gottimukkala Shyam Sunder",
+    signatoryName: setting?.signatoryName || adminUser?.displayName || "",
     signatureImageUrl: setting?.signatureImageUrl || null,
   });
 }
