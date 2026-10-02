@@ -24,11 +24,13 @@ async function main() {
   console.log(`Found ${badRecords.length} record(s) to fix:`);
 
   for (const record of badRecords) {
-    const correctName = record.adminUser.displayName;
+    const correctName = record.adminUser?.displayName;
+    if (!correctName) continue;
+
     console.log(`  • ${record.adminUserId} → "${correctName}"`);
 
     await prisma.signatureSetting.update({
-      where: { adminUserId: record.adminUserId },
+      where: { id: record.id },
       data: { signatoryName: correctName },
     });
   }
