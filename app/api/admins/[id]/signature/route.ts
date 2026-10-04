@@ -23,6 +23,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   return NextResponse.json({
     signatoryName: setting?.signatoryName || adminUser?.displayName || "",
     signatureImageUrl: setting?.signatureImageUrl || null,
+    designation: setting?.designation || "Principal Officer",
+    isCalibrationEngineer: setting?.isCalibrationEngineer || false,
   });
 }
 
@@ -78,7 +80,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const setting = await prisma.signatureSetting.upsert({
       where: { adminUserId: id },
       create: {
-        adminUserId: id,
+        adminUser: { connect: { id } },
         signatoryName,
         signatureImageUrl,
       },
@@ -91,6 +93,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({
       signatoryName: setting.signatoryName,
       signatureImageUrl: setting.signatureImageUrl,
+      designation: setting.designation,
+      isCalibrationEngineer: setting.isCalibrationEngineer,
     });
   } catch (error) {
     console.error("Signature upload error:", error);
@@ -113,19 +117,31 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!admin) return NextResponse.json({ error: "Admin account not found." }, { status: 404 });
 
   try {
-    const body = await request.json() as { signatoryName?: string };
-    const signatoryName = body.signatoryName?.trim();
-    if (!signatoryName) return NextResponse.json({ error: "signatoryName is required." }, { status: 400 });
+    const body = await request.json() as { signatoryName?: string; designation?: string; isCalibrationEngineer?: boolean };
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: any = {};
+    if (body.signatoryName !== undefined) updateData.signatoryName = body.signatoryName.trim();
+    if (body.designation !== undefined) updateData.designation = body.designation.trim();
+    if (body.isCalibrationEngineer !== undefined) updateData.isCalibrationEngineer = body.isCalibrationEngineer;
 
     const setting = await prisma.signatureSetting.upsert({
       where: { adminUserId: id },
-      create: { adminUserId: id, signatoryName, signatureImageUrl: null },
-      update: { signatoryName },
+      create: { 
+        adminUser: { connect: { id } }, 
+        signatoryName: body.signatoryName?.trim() || admin.displayName, 
+        designation: body.designation?.trim() || "Principal Officer",
+        isCalibrationEngineer: body.isCalibrationEngineer || false,
+        signatureImageUrl: null 
+      },
+      update: updateData,
     });
 
     return NextResponse.json({
       signatoryName: setting.signatoryName,
       signatureImageUrl: setting.signatureImageUrl,
+      designation: setting.designation,
+      isCalibrationEngineer: setting.isCalibrationEngineer,
     });
   } catch (error) {
     return NextResponse.json(

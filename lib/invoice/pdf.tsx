@@ -47,6 +47,10 @@ type InvoiceWithItems = {
   customerSignature: string | null;
   authorizedSignatoryName: string | null;
   authorizedSignatureSnapshot: string | null;
+  authorizedDesignation?: string | null;
+  calEngineerName?: string | null;
+  calEngineerSignatureSnapshot?: string | null;
+  calEngineerDesignation?: string | null;
   items: InvoiceItem[];
 };
 
@@ -561,12 +565,22 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
               <Text style={[styles.bold, { fontSize: 9.5 }]}>Customer Signature</Text>
             </View>
 
+            {invoice.calEngineerName || invoice.calEngineerSignatureSnapshot ? (
+              <View style={styles.signBlock}>
+                {invoice.calEngineerSignatureSnapshot ? (
+                  <Image src={invoice.calEngineerSignatureSnapshot} style={styles.signatureImage} />
+                ) : <View style={{ height: 40 }} />}
+                <Text style={[styles.bold, { fontSize: 9.5 }]}>{invoice.calEngineerName || ""}</Text>
+                <Text style={{ fontSize: 8.5, marginTop: 1, fontWeight: 700 }}>{invoice.calEngineerDesignation || "Calibration & Testing Engineer"}</Text>
+              </View>
+            ) : null}
+
             <View style={styles.signBlock}>
               {invoice.authorizedSignatureSnapshot ? (
                 <Image src={invoice.authorizedSignatureSnapshot} style={styles.signatureImage} />
               ) : <View style={{ height: 40 }} />}
               <Text style={[styles.bold, { fontSize: 9.5 }]}>{invoice.authorizedSignatoryName || "Gottimukkala Shyam Sunder"}</Text>
-              <Text style={{ fontSize: 8.5, marginTop: 1, fontWeight: 700 }}>Principal Officer</Text>
+              <Text style={{ fontSize: 8.5, marginTop: 1, fontWeight: 700 }}>{invoice.authorizedDesignation || "Principal Officer"}</Text>
             </View>
           </View>
 

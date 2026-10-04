@@ -161,8 +161,96 @@ function money(value: number) {
   return value.toLocaleString("en-IN", { style: "currency", currency: "INR" });
 }
 
+const DISTRICT_OPTIONS = [
+  "Nalgonda",
+  "Suryapet",
+  "Yadadri Bhuvanagiri"
+] as const;
+
+const DISTRICT_VILLAGES: Record<string, string[]> = {
+  "Nalgonda": [
+    "Nalgonda",
+    "Miryalaguda",
+    "Devarakonda",
+    "Nakrekal",
+    "Narketpally",
+    "Chityal",
+    "Chandur",
+    "Haliya (Anumula)",
+    "Kanagal",
+    "Kattangoor",
+    "Marriguda",
+    "Munugode",
+    "Nidamanoor",
+    "Peddavoora",
+    "Saligouraram",
+    "Thipparthy",
+    "Vemulapally",
+    "Chandampet",
+    "Chinthapally",
+    "Dameracherla",
+    "Gurrampode",
+    "Gundlapally (Dindi)",
+    "Madugulapally",
+    "Pedda Adiserla Pally",
+    "Tirumalagiri Sagar"
+  ],
+  "Suryapet": [
+    "Suryapet",
+    "Kodad",
+    "Huzurnagar",
+    "Tirumalagiri",
+    "Garidepally",
+    "Chilkur",
+    "Mattampally",
+    "Mellachervu",
+    "Munagala",
+    "Nadigudem",
+    "Nereducherla",
+    "Noothankal",
+    "Penpahad",
+    "Phanigiri",
+    "Thungathurthi",
+    "Ananthagiri",
+    "Atmakur (S)",
+    "Chivvemla",
+    "Jajireddygudem (Arvapally)",
+    "Mothey",
+    "Nagaram",
+    "Palakeedu"
+  ],
+  "Yadadri Bhuvanagiri": [
+    "Bhongir (Bhuvanagiri)",
+    "Yadagirigutta",
+    "Choutuppal",
+    "Alair",
+    "Pochampally (Bhudhan Pochampally)",
+    "Bibinagar",
+    "Bommalaramaram",
+    "Rajapet",
+    "Turkapally",
+    "Valigonda",
+    "Addagudur",
+    "Gundala",
+    "Motakondur",
+    "Narayanpur (Samsthan Narayanpur)",
+    "Ramannapet"
+  ]
+};
+
+type AdminWithSig = {
+  id: string;
+  userId: string;
+  displayName: string;
+  signatoryName: string;
+  signatureImageUrl: string | null;
+  designation?: string;
+};
+
 export function InvoiceForm() {
   const [products, setProducts] = useState<ProductService[]>([]);
+  const [calEngineers, setCalEngineers] = useState<AdminWithSig[]>([]);
+  const [calEngineerAdminId, setCalEngineerAdminId] = useState<string>("");
   const [serviceType, setServiceType] = useState("");
   const [saving, setSaving] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState<{ pdfUrl?: string | null; invoiceNumber?: string } | null>(null);
@@ -174,6 +262,8 @@ export function InvoiceForm() {
   const [stampChecked, setStampChecked] = useState(false);
   const [isOtherFirmType, setIsOtherFirmType] = useState(false);
   const [customFirmType, setCustomFirmType] = useState("");
+  const [isOtherVillage, setIsOtherVillage] = useState(false);
+  const [customVillage, setCustomVillage] = useState("");
   const [gstApplicable, setGstApplicable] = useState<"applicable" | "non-applicable">("non-applicable");
   const [showWaModal, setShowWaModal] = useState(false);
   const [waMobile, setWaMobile] = useState("");
@@ -218,14 +308,25 @@ export function InvoiceForm() {
       categoryOfWM: "",
       certificateValidityYears: "",
       customerSignature: "",
+      calEngineerAdminId: "",
       items: []
     }
   });
 
   const { fields, append, remove, replace } = useFieldArray({ control: form.control, name: "items" });
   const watchedItems = useWatch({ control: form.control, name: "items" });
+  const selectedDistrict = useWatch({ control: form.control, name: "locality" }) || "";
+  const selectedVillage = useWatch({ control: form.control, name: "doorNo" }) || "";
   const totals = useMemo(() => calculateInvoiceTotals(watchedItems || []), [watchedItems]);
   const serviceTypes = useMemo(() => Array.from(new Set(products.map((product) => product.type))).sort(), [products]);
+
+  const availableVillages = useMemo(() => {
+    if (!selectedDistrict) return [];
+    const matchedKey = Object.keys(DISTRICT_VILLAGES).find(
+      (k) => k.toLowerCase() === selectedDistrict.toLowerCase()
+    );
+    return matchedKey ? DISTRICT_VILLAGES[matchedKey] : [];
+  }, [selectedDistrict]);
 
   const [feeRows, setFeeRows] = useState<FeeCalculationRow[]>([
     {
@@ -409,18 +510,21 @@ export function InvoiceForm() {
 
   useEffect(() => {
     async function loadData() {
-      const [productsResponse, signatureResponse] = await Promise.all([
+      const [productsResponse, signatureResponse, engineersResponse] = await Promise.all([
         fetch("/api/products"),
-        fetch("/api/settings/signature")
+        fetch("/api/settings/signature"),
+        fetch("/api/admins/with-signatures")
       ]);
-      const [productsData, signatureData] = await Promise.all([
+      const [productsData, signatureData, engineersData] = await Promise.all([
         productsResponse.json(),
-        signatureResponse.json()
+        signatureResponse.json(),
+        engineersResponse.json()
       ]);
       if (productsResponse.ok) setProducts(productsData.items || []);
       if (signatureResponse.ok && !signatureData.signatureDataUrl) {
         toast.info("Save an authorized signature in Settings before final billing.");
       }
+      if (engineersResponse.ok) setCalEngineers(engineersData.items || []);
     }
     void loadData();
   }, []);
@@ -508,6 +612,7 @@ export function InvoiceForm() {
         model: firstRow?.model || values.model,
         accuracyClass: firstRow?.accuracyClass || values.accuracyClass,
         items: values.items && values.items.length > 0 ? values.items : mappedItems,
+        calEngineerAdminId: calEngineerAdminId || null,
         checklistPhotos
       };
       const response = await fetch("/api/invoices", {
@@ -633,17 +738,79 @@ export function InvoiceForm() {
                 <Field label="Firm Name: *" error={form.formState.errors.firmName?.message}>
                   <Input placeholder="Firm Name" {...form.register("firmName")} />
                 </Field>
-                <Field label="Door no: *" error={form.formState.errors.doorNo?.message}>
-                  <Input placeholder="Door no" {...form.register("doorNo")} />
+                <Field label="District: *" error={form.formState.errors.locality?.message}>
+                  <select
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    value={selectedDistrict}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      form.setValue("locality", val, { shouldValidate: true });
+                      const currentVillage = form.getValues("doorNo");
+                      const matchedKey = Object.keys(DISTRICT_VILLAGES).find(
+                        (k) => k.toLowerCase() === val.toLowerCase()
+                      );
+                      const validVillages = matchedKey ? DISTRICT_VILLAGES[matchedKey] : [];
+                      if (currentVillage && !validVillages.includes(currentVillage) && !isOtherVillage) {
+                        form.setValue("doorNo", "", { shouldValidate: true });
+                      }
+                    }}
+                  >
+                    <option value="">--Select District--</option>
+                    {DISTRICT_OPTIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
-                <Field label="Street: *" error={form.formState.errors.street?.message}>
-                  <Input placeholder="Street" {...form.register("street")} />
+                <Field label="Mandal: *" error={form.formState.errors.street?.message}>
+                  <Input placeholder="Mandal" {...form.register("street")} />
                 </Field>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-                <Field label="Locality: *" error={form.formState.errors.locality?.message}>
-                  <Input placeholder="Locality" {...form.register("locality")} />
+                <Field label="Village: *" error={form.formState.errors.doorNo?.message}>
+                  <select
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    disabled={!selectedDistrict}
+                    value={
+                      isOtherVillage || (selectedVillage && availableVillages.length > 0 && !availableVillages.includes(selectedVillage))
+                        ? "Other"
+                        : selectedVillage
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "Other") {
+                        setIsOtherVillage(true);
+                        form.setValue("doorNo", customVillage, { shouldValidate: true });
+                      } else {
+                        setIsOtherVillage(false);
+                        form.setValue("doorNo", val, { shouldValidate: true });
+                      }
+                    }}
+                  >
+                    <option value="">
+                      {selectedDistrict ? "--Select Village--" : "--Select District First--"}
+                    </option>
+                    {availableVillages.map((v) => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                    {selectedDistrict && <option value="Other">Other (Enter Manually)</option>}
+                  </select>
+                  {(isOtherVillage || (selectedVillage && availableVillages.length > 0 && !availableVillages.includes(selectedVillage))) && (
+                    <Input
+                      type="text"
+                      placeholder="Enter Village Name"
+                      className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 mt-2"
+                      value={customVillage || (availableVillages.includes(selectedVillage) ? "" : selectedVillage)}
+                      onChange={(e) => {
+                        setCustomVillage(e.target.value);
+                        form.setValue("doorNo", e.target.value, { shouldValidate: true });
+                      }}
+                    />
+                  )}
                 </Field>
                 <Field label="Pin Code: *" error={form.formState.errors.pinCode?.message}>
                   <Input placeholder="Pin Code" {...form.register("pinCode")} />
@@ -1215,6 +1382,73 @@ export function InvoiceForm() {
           </div>
 
 
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Calibration &amp; Testing Engineer</CardTitle>
+              <CardDescription>
+                Select the engineer whose authorized signature will appear on the invoice.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 sm:grid-cols-2">
+                {/* Dropdown */}
+                <div className="space-y-2">
+                  <Label>Select Engineer</Label>
+                  <select
+                    className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400"
+                    value={calEngineerAdminId}
+                    onChange={(e) => {
+                      setCalEngineerAdminId(e.target.value);
+                      form.setValue("calEngineerAdminId", e.target.value || null);
+                    }}
+                  >
+                    <option value="">-- None / Not Selected --</option>
+                    {calEngineers.map((eng) => (
+                      <option key={eng.id} value={eng.id}>
+                        {eng.signatoryName || eng.displayName}
+                      </option>
+                    ))}
+                  </select>
+                  {calEngineers.length === 0 && (
+                    <p className="text-xs text-slate-400 mt-1">No admin accounts found. Create admin accounts and upload their signatures in the Super Admin panel.</p>
+                  )}
+                </div>
+
+                {/* Signature Preview */}
+                {calEngineerAdminId && (() => {
+                  const eng = calEngineers.find((e) => e.id === calEngineerAdminId);
+                  if (!eng) return null;
+                  return (
+                    <div className="space-y-2">
+                      <Label>Signature Preview</Label>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 flex flex-col items-center gap-2 min-h-[120px] justify-center">
+                        {eng.signatureImageUrl ? (
+                          <>
+                            <img
+                              src={eng.signatureImageUrl}
+                              alt={`${eng.signatoryName}'s signature`}
+                              className="h-16 object-contain"
+                            />
+                            <div className="text-center mt-1">
+                              <p className="text-sm font-semibold text-slate-800">{eng.signatoryName || eng.displayName}</p>
+                              <p className="text-xs text-slate-500">{eng.designation || "Calibration & Testing Engineer"}</p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-slate-800">{eng.signatoryName || eng.displayName}</p>
+                            <p className="text-xs text-slate-400 mt-1">No signature uploaded for this engineer.</p>
+                            <p className="text-xs text-slate-400">Upload in Super Admin → Authorized Signatures.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader><CardTitle>Customer Signature</CardTitle></CardHeader>

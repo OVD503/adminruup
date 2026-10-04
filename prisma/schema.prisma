@@ -79,9 +79,14 @@ model Invoice {
   totalAmount Float @default(0)
 
   // Signatures
-  customerSignature          String? // data-URL PNG from signature pad
-  authorizedSignatoryName    String?
-  authorizedSignatureSnapshot String? // data-URL snapshot at generation time
+  customerSignature               String? // data-URL PNG from signature pad
+  authorizedSignatoryName         String?
+  authorizedSignatureSnapshot     String? // data-URL snapshot at generation time
+  authorizedDesignation           String? // Designation snapshot
+  calEngineerAdminId              String? // Admin selected as Calibration & Testing Engineer
+  calEngineerName                 String? // Name snapshot at generation time
+  calEngineerSignatureSnapshot    String? // Signature URL snapshot at generation time
+  calEngineerDesignation          String? // Designation snapshot
 
   // PDF storage
   pdfUrl String?
@@ -135,6 +140,8 @@ model SignatureSetting {
   adminUserId      String?  @unique
   adminUser        AdminUser? @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
   signatoryName    String?
+  designation      String?  @default("Principal Officer")
+  isCalibrationEngineer Boolean @default(false)
   signatureDataUrl String? // legacy data-URL PNG (deprecated)
   signatureImageUrl String? // Cloudflare R2 public URL for uploaded PNG
   createdAt        DateTime @default(now())

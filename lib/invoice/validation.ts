@@ -62,6 +62,7 @@ export const invoiceInputSchema = z.object({
   categoryOfWM: nullableString,
   certificateValidityYears: nullableString,
   customerSignature: nullablePdfImageDataUrl,
+  calEngineerAdminId: nullableString,
   items: z.array(invoiceItemInputSchema).optional().default([])
 });
 

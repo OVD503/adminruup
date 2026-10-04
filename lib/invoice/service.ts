@@ -30,6 +30,20 @@ export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSe
     where: { adminUserId: admin.id },
   });
 
+  // Look up the Calibration & Testing Engineer's signature if specified
+  let calEngineerName: string | null = null;
+  let calEngineerSignatureSnapshot: string | null = null;
+  let calEngineerDesignation: string | null = null;
+  if (input.calEngineerAdminId) {
+    const [calSig, calAdmin] = await Promise.all([
+      prisma.signatureSetting.findUnique({ where: { adminUserId: input.calEngineerAdminId } }),
+      prisma.adminUser.findUnique({ where: { id: input.calEngineerAdminId }, select: { displayName: true } }),
+    ]);
+    calEngineerName = calSig?.signatoryName || calAdmin?.displayName || null;
+    calEngineerSignatureSnapshot = calSig?.signatureImageUrl ?? calSig?.signatureDataUrl ?? null;
+    calEngineerDesignation = calSig?.designation || null;
+  }
+
   const invoiceNumber = await nextInvoiceNumber();
 
   const clientName = input.firmName || input.clientName || "";
@@ -83,6 +97,11 @@ export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSe
       customerSignature: input.customerSignature,
       authorizedSignatoryName: signatureSetting?.signatoryName ?? "Gottimukkala Shyam Sunder",
       authorizedSignatureSnapshot: signatureSetting?.signatureImageUrl ?? signatureSetting?.signatureDataUrl ?? null,
+      authorizedDesignation: signatureSetting?.designation ?? null,
+      calEngineerAdminId: input.calEngineerAdminId ?? null,
+      calEngineerName: calEngineerName ?? null,
+      calEngineerSignatureSnapshot: calEngineerSignatureSnapshot ?? null,
+      calEngineerDesignation: calEngineerDesignation ?? null,
       createdById: admin.id,
       items: {
         create: totals.items.map((item) => ({
@@ -104,7 +123,8 @@ export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSe
   }
 
   // Generate PDF and upload to R2
-  const pdf = await renderInvoicePdf(invoice, checklistPhotos);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pdf = await renderInvoicePdf(invoice as any, checklistPhotos);
   const pdfUrl = await uploadToR2(pdf, buildInvoiceStorageKey(invoice.invoiceNumber, invoice.invoiceDate), "application/pdf");
 
   const updated = await prisma.invoice.update({

@@ -29,6 +29,8 @@ type Admin = {
 type SignatureData = {
   signatoryName: string;
   signatureImageUrl: string | null;
+  designation?: string;
+  isCalibrationEngineer?: boolean;
 };
 
 export function SignatureManagement() {
@@ -38,6 +40,8 @@ export function SignatureManagement() {
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const [editingNameFor, setEditingNameFor] = useState<string | null>(null);
   const [tempName, setTempName] = useState("");
+  const [editingDesignationFor, setEditingDesignationFor] = useState<string | null>(null);
+  const [tempDesignation, setTempDesignation] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null);
 
@@ -156,7 +160,48 @@ export function SignatureManagement() {
       toast.error(error instanceof Error ? error.message : "Could not update name.");
     }
   }
+  async function saveDesignation(adminId: string) {
+    const desig = tempDesignation.trim() || signatures[adminId]?.designation || "Principal Officer";
+    setEditingDesignationFor(null);
 
+    try {
+      const res = await fetch(`/api/admins/${adminId}/signature`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ designation: desig }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update designation.");
+
+      setSignatures((prev) => ({
+        ...prev,
+        [adminId]: { ...prev[adminId], designation: data.designation },
+      }));
+      toast.success("Designation updated.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update designation.");
+    }
+  }
+
+  async function toggleCalibrationEngineer(adminId: string, newValue: boolean) {
+    try {
+      const res = await fetch(`/api/admins/${adminId}/signature`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isCalibrationEngineer: newValue }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update.");
+
+      setSignatures((prev) => ({
+        ...prev,
+        [adminId]: { ...prev[adminId], isCalibrationEngineer: data.isCalibrationEngineer },
+      }));
+      toast.success(newValue ? "Marked as Calibration & Testing Engineer." : "Removed Calibration & Testing Engineer role.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update.");
+    }
+  }
 
   return (
     <main className="erp-shell min-h-screen px-6 py-8">
@@ -201,6 +246,7 @@ export function SignatureManagement() {
               const hasSignature = Boolean(sig?.signatureImageUrl);
               const isUploading = uploadingFor === admin.id;
               const isEditingName = editingNameFor === admin.id;
+              const isEditingDesignation = editingDesignationFor === admin.id;
 
               return (
                 <div
@@ -287,6 +333,94 @@ export function SignatureManagement() {
                           </Button>
                         </div>
                       )}
+                    </div>
+
+                    {/* Designation */}
+                    <div className="mb-4">
+                      <Label className="text-xs font-medium text-slate-500 mb-1.5 block">
+                        Designation
+                      </Label>
+                      {isEditingDesignation ? (
+                        <div className="flex gap-2">
+                          <Input
+                            value={tempDesignation}
+                            onChange={(e) => setTempDesignation(e.target.value)}
+                            className="h-8 text-sm"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveDesignation(admin.id);
+                              if (e.key === "Escape") setEditingDesignationFor(null);
+                            }}
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => saveDesignation(admin.id)}
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => setEditingDesignationFor(null)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-slate-800">
+                            {sig?.designation || "Principal Officer"}
+                          </span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Edit designation"
+                            onClick={() => {
+                              setEditingDesignationFor(admin.id);
+                              setTempDesignation(sig?.designation || "Principal Officer");
+                            }}
+                          >
+                            <Pencil className="h-3 w-3 text-slate-400" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Is Calibration Engineer Checkbox */}
+                    <div className="mb-4">
+                      <Label className="text-xs font-medium text-slate-500 mb-1.5 block">
+                        Is Calibration &amp; Testing Engineer
+                      </Label>
+                      <div className="flex items-center gap-5">
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            id={`cal-engineer-yes-${admin.id}`}
+                            checked={sig?.isCalibrationEngineer === true}
+                            onChange={() => toggleCalibrationEngineer(admin.id, true)}
+                            className="h-4 w-4 rounded border-slate-300 text-[#ea580c] focus:ring-[#ea580c] cursor-pointer"
+                          />
+                          <span className={`text-sm font-medium ${sig?.isCalibrationEngineer ? "text-emerald-700 font-bold" : "text-slate-600"}`}>
+                            Yes
+                          </span>
+                        </label>
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            id={`cal-engineer-no-${admin.id}`}
+                            checked={!sig?.isCalibrationEngineer}
+                            onChange={() => toggleCalibrationEngineer(admin.id, false)}
+                            className="h-4 w-4 rounded border-slate-300 text-slate-400 focus:ring-slate-400 cursor-pointer"
+                          />
+                          <span className={`text-sm font-medium ${!sig?.isCalibrationEngineer ? "text-slate-700 font-bold" : "text-slate-400"}`}>
+                            No
+                          </span>
+                        </label>
+                      </div>
                     </div>
 
                     {/* Signature preview */}
