@@ -170,6 +170,8 @@ export function InvoiceForm() {
   const [whatChangedDetails, setWhatChangedDetails] = useState("");
   const [calibrationPhoto, setCalibrationPhoto] = useState<string | null>(null);
   const [stampPhoto, setStampPhoto] = useState<string | null>(null);
+  const [calibrationChecked, setCalibrationChecked] = useState(false);
+  const [stampChecked, setStampChecked] = useState(false);
   const [isOtherFirmType, setIsOtherFirmType] = useState(false);
   const [customFirmType, setCustomFirmType] = useState("");
   const [gstApplicable, setGstApplicable] = useState<"applicable" | "non-applicable">("non-applicable");
@@ -755,7 +757,17 @@ export function InvoiceForm() {
                       <td className="py-2.5 px-4 text-center font-medium">1</td>
                       <td className="py-2.5 px-4 font-medium text-slate-700">Calibration</td>
                       <td className="py-2.5 px-4 text-center">
-                        <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer" />
+                        <label className="inline-flex items-center justify-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={calibrationChecked}
+                            onChange={(e) => setCalibrationChecked(e.target.checked)}
+                            className="h-5 w-5 rounded border-slate-400 text-orange-600 focus:ring-orange-500 cursor-pointer accent-orange-600"
+                          />
+                          <span className={`text-xs font-semibold ${calibrationChecked ? "text-emerald-600" : "text-slate-500"}`}>
+                            {calibrationChecked ? "Yes" : "No"}
+                          </span>
+                        </label>
                       </td>
                       <td className="py-2.5 px-4">
                         <input
@@ -765,21 +777,34 @@ export function InvoiceForm() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             try {
-                              setCalibrationPhoto(file ? await readPdfCompatibleImage(file) : null);
+                              const photo = file ? await readPdfCompatibleImage(file) : null;
+                              setCalibrationPhoto(photo);
+                              setCalibrationChecked(Boolean(photo));
                             } catch (error) {
                               setCalibrationPhoto(null);
+                              setCalibrationChecked(false);
                               toast.error(error instanceof Error ? error.message : "Could not prepare the calibration photo.");
                             }
                           }}
                         />
-                        {calibrationPhoto && <span className="text-[10px] text-emerald-600 font-medium">✓ Photo ready</span>}
+                        {calibrationPhoto && <span className="text-[10px] text-emerald-600 font-medium block mt-1">✓ Photo ready</span>}
                       </td>
                     </tr>
                     <tr className="bg-slate-50/60 hover:bg-slate-50">
                       <td className="py-2.5 px-4 text-center font-medium">2</td>
                       <td className="py-2.5 px-4 font-medium text-slate-700">Stamp & Seal</td>
                       <td className="py-2.5 px-4 text-center">
-                        <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer" />
+                        <label className="inline-flex items-center justify-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={stampChecked}
+                            onChange={(e) => setStampChecked(e.target.checked)}
+                            className="h-5 w-5 rounded border-slate-400 text-orange-600 focus:ring-orange-500 cursor-pointer accent-orange-600"
+                          />
+                          <span className={`text-xs font-semibold ${stampChecked ? "text-emerald-600" : "text-slate-500"}`}>
+                            {stampChecked ? "Yes" : "No"}
+                          </span>
+                        </label>
                       </td>
                       <td className="py-2.5 px-4">
                         <input
@@ -789,14 +814,17 @@ export function InvoiceForm() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             try {
-                              setStampPhoto(file ? await readPdfCompatibleImage(file) : null);
+                              const photo = file ? await readPdfCompatibleImage(file) : null;
+                              setStampPhoto(photo);
+                              setStampChecked(Boolean(photo));
                             } catch (error) {
                               setStampPhoto(null);
+                              setStampChecked(false);
                               toast.error(error instanceof Error ? error.message : "Could not prepare the stamp photo.");
                             }
                           }}
                         />
-                        {stampPhoto && <span className="text-[10px] text-emerald-600 font-medium">✓ Photo ready</span>}
+                        {stampPhoto && <span className="text-[10px] text-emerald-600 font-medium block mt-1">✓ Photo ready</span>}
                       </td>
                     </tr>
                     <tr className="bg-white hover:bg-slate-50/50">

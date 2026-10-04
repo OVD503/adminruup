@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // ✅ NO "standalone" — Vercel handles deployment automatically
   serverExternalPackages: ["@react-pdf/renderer", "pdfkit"],
+  outputFileTracingIncludes: {
+    "/**": ["./node_modules/pdfkit/**/*"],
+  },
   compress: true,
   images: {
     formats: ["image/avif", "image/webp"],

@@ -28,13 +28,20 @@
     "disableStaticImages": false,
     "minimumCacheTTL": 60,
     "formats": [
+      "image/avif",
       "image/webp"
     ],
     "maximumResponseBody": 50000000,
     "dangerouslyAllowSVG": false,
     "contentSecurityPolicy": "script-src 'none'; frame-src 'none'; sandbox;",
     "contentDispositionType": "attachment",
-    "remotePatterns": [],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "^(?:^(?:pub\\-c7d9c09254244c299593b48214463b97\\.r2\\.dev)$)$",
+        "pathname": "^(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)\\/?)$"
+      }
+    ],
     "unoptimized": false,
     "sizes": [
       640,
