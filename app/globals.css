@@ -26,13 +26,102 @@
     --radius: 0.5rem;
   }
 
-  * {
+  /* ─── Base Resets & iOS Safari Fixes ─── */
+  *,
+  *::before,
+  *::after {
     @apply border-border;
+    /* Remove tap highlight on iOS/Android */
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent text size inflation on iOS landscape */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html {
+    /* Smooth momentum scrolling on iOS Safari */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    /* Support iPhone notch/home indicator */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: Arial, Helvetica, sans-serif;
+    @apply bg-background text-foreground;
+    /* Inter font with system fallbacks */
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* Crisp font rendering on macOS/iOS Safari */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+  }
+
+  /* ─── iOS Safari Button Reset ─── */
+  button,
+  [role="button"] {
+    /* Fix iOS Safari button appearance */
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+
+  /* ─── Minimum Touch Target for iPhone/iPad (Apple HIG: 44x44pt) ─── */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="link"] {
+    min-height: 44px;
+  }
+
+  /* ─── Inputs on iOS Safari ─── */
+  input,
+  textarea,
+  select {
+    /* Prevent iOS zoom on input focus (font must be ≥ 16px) */
+    font-size: max(16px, 1rem);
+    /* Remove default iOS input styling */
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* ─── Smooth transitions (hardware-accelerated) ─── */
+  a,
+  button {
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    will-change: auto;
+  }
+
+  /* ─── Scrollbar styling (Webkit/Safari) ─── */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(214 32% 85%);
+    border-radius: 99px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(215 20% 65%);
+  }
+
+  /* ─── Focus visible (keyboard nav, Safari) ─── */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
   }
 }
 
