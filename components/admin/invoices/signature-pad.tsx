@@ -282,7 +282,7 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
           */}
           <canvas
             ref={canvasRef}
-            className="h-40 w-full touch-none rounded-md border border-slate-200 bg-white shadow-inner"
+            className="h-64 w-full touch-none rounded-md border border-slate-200 bg-white shadow-inner"
             style={{
               touchAction: "none",
               overscrollBehavior: "none",
@@ -320,7 +320,7 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
           </p>
 
           {uploadPreview ? (
-            <div className="relative rounded-md border border-slate-200 bg-white shadow-inner h-40 flex items-center justify-center overflow-hidden">
+            <div className="relative rounded-md border border-slate-200 bg-white shadow-inner h-64 flex items-center justify-center overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={uploadPreview}
@@ -337,7 +337,7 @@ export function SignaturePad({ value, onChange, label = "Signature" }: Signature
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center h-40 w-full rounded-md border-2 border-dashed border-slate-300 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+            <label className="flex flex-col items-center justify-center h-64 w-full rounded-md border-2 border-dashed border-slate-300 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
               <Upload className="h-8 w-8 text-slate-400 mb-2" />
               <span className="text-sm font-medium text-slate-600">Click to upload signature photo</span>
               <span className="text-xs text-slate-400 mt-1">PNG · JPG · JPEG · HEIC · WEBP</span>

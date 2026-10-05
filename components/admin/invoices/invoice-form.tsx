@@ -813,13 +813,40 @@ export function InvoiceForm() {
                   )}
                 </Field>
                 <Field label="Pin Code: *" error={form.formState.errors.pinCode?.message}>
-                  <Input placeholder="Pin Code" {...form.register("pinCode")} />
+                  <Input
+                    placeholder="Pin Code"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    {...form.register("pinCode", {
+                      onChange: (e) => {
+                        const clean = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        form.setValue("pinCode", clean, { shouldValidate: true });
+                      }
+                    })}
+                  />
                 </Field>
                 <Field label="Contact person Name: *" error={form.formState.errors.contactPersonName?.message}>
-                  <Input placeholder="Contact person Name" {...form.register("contactPersonName")} />
+                  <Input
+                    placeholder="Contact person Name"
+                    {...form.register("contactPersonName", {
+                      onChange: (e) => {
+                        form.setValue("proprietorName", e.target.value, { shouldValidate: true });
+                      }
+                    })}
+                  />
                 </Field>
                 <Field label="Contact person Number: *" error={form.formState.errors.contactPersonNumber?.message}>
-                  <Input placeholder="Contact person Number" {...form.register("contactPersonNumber")} />
+                  <Input
+                    placeholder="Contact person Number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    {...form.register("contactPersonNumber", {
+                      onChange: (e) => {
+                        form.setValue("proprietorContactNumber", e.target.value, { shouldValidate: true });
+                      }
+                    })}
+                  />
                 </Field>
               </div>
 
@@ -897,7 +924,7 @@ export function InvoiceForm() {
 
 
                 <Field label="Contact Number: *">
-                  <Input placeholder="Enter Contact Number" {...form.register("proprietorContactNumber")} />
+                  <Input placeholder="Enter Contact Number" inputMode="numeric" pattern="[0-9]*" {...form.register("proprietorContactNumber")} />
                 </Field>
 
               </div>
@@ -1152,13 +1179,24 @@ export function InvoiceForm() {
                           {/* MOD APP */}
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">MOD APP:</span>
-                            <input
-                              type="text"
-                              value={row.model || ""}
-                              onChange={(e) => updateFeeRow(index, "model", e.target.value)}
-                              className="w-24 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                              placeholder="Model Approval"
-                            />
+                            <div className="flex items-center rounded border border-slate-300 bg-white overflow-hidden focus-within:ring-1 focus-within:ring-blue-500">
+                              <span className="bg-slate-100 px-1.5 py-1 text-[11px] font-bold text-slate-600 border-r border-slate-200 select-none">
+                                IND/09/
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={(row.model || "").replace(/^(IND\/09\/|IND09\/|IND\/09|IND09)/i, "")}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const clean = raw.replace(/^(IND\/09\/|IND09\/|IND\/09|IND09)/i, "");
+                                  updateFeeRow(index, "model", clean ? `IND/09/${clean}` : "");
+                                }}
+                                className="w-20 h-7 px-1.5 text-xs focus:outline-none bg-transparent font-medium"
+                                placeholder="Number"
+                              />
+                            </div>
                           </div>
 
                           {/* SR.NO */}
@@ -1166,6 +1204,8 @@ export function InvoiceForm() {
                             <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">SR.NO:</span>
                             <input
                               type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               value={row.srNo || ""}
                               onChange={(e) => updateFeeRow(index, "srNo", e.target.value)}
                               className="w-24 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
@@ -1178,6 +1218,8 @@ export function InvoiceForm() {
                             <span className="text-[11px] font-medium text-slate-600 whitespace-nowrap">No. of Machines under Verification:</span>
                             <input
                               type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               value={row.noOfMachines || ""}
                               onChange={(e) => updateFeeRow(index, "noOfMachines", e.target.value)}
                               className="w-20 h-7 rounded border border-slate-300 px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"

@@ -247,8 +247,8 @@ const styles = StyleSheet.create({
     width: "45%"
   },
   signatureImage: {
-    width: 100,
-    height: 40,
+    width: 145,
+    height: 58,
     objectFit: "contain",
     marginBottom: 2
   },
@@ -561,7 +561,7 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
           {/* Bottom Signatures Block */}
           <View style={styles.footerSignatures}>
             <View style={styles.signBlock}>
-              {invoice.customerSignature ? <Image src={invoice.customerSignature} style={styles.signatureImage} /> : <View style={{ height: 40 }} />}
+              {invoice.customerSignature ? <Image src={invoice.customerSignature} style={styles.signatureImage} /> : <View style={{ height: 58 }} />}
               <Text style={[styles.bold, { fontSize: 9.5 }]}>Customer Signature</Text>
             </View>
 
@@ -569,7 +569,7 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
               <View style={styles.signBlock}>
                 {invoice.calEngineerSignatureSnapshot ? (
                   <Image src={invoice.calEngineerSignatureSnapshot} style={styles.signatureImage} />
-                ) : <View style={{ height: 40 }} />}
+                ) : <View style={{ height: 58 }} />}
                 <Text style={[styles.bold, { fontSize: 9.5 }]}>{invoice.calEngineerName || ""}</Text>
                 <Text style={{ fontSize: 8.5, marginTop: 1, fontWeight: 700 }}>{invoice.calEngineerDesignation || "Calibration & Testing Engineer"}</Text>
               </View>
@@ -578,7 +578,7 @@ export function InvoicePdfDocument({ invoice, checklistPhotos }: { invoice: Invo
             <View style={styles.signBlock}>
               {invoice.authorizedSignatureSnapshot ? (
                 <Image src={invoice.authorizedSignatureSnapshot} style={styles.signatureImage} />
-              ) : <View style={{ height: 40 }} />}
+              ) : <View style={{ height: 58 }} />}
               <Text style={[styles.bold, { fontSize: 9.5 }]}>{invoice.authorizedSignatoryName || "Gottimukkala Shyam Sunder"}</Text>
               <Text style={{ fontSize: 8.5, marginTop: 1, fontWeight: 700 }}>{invoice.authorizedDesignation || "Principal Officer"}</Text>
             </View>
