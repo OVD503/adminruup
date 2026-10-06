@@ -268,10 +268,13 @@ export function InvoiceForm() {
   const [showWaModal, setShowWaModal] = useState(false);
   const [waMobile, setWaMobile] = useState("");
   const [waMobileError, setWaMobileError] = useState("");
+  const [invoiceNumberExists, setInvoiceNumberExists] = useState(false);
+  const [checkingInvoiceNumber, setCheckingInvoiceNumber] = useState(false);
 
   const form = useForm<InvoiceInput>({
     resolver: zodResolver(invoiceInputSchema) as any,
     defaultValues: {
+      invoiceNumber: "",
       mode: "AUTO",
       status: "GENERATED",
       invoiceDate: todayDate(),
@@ -315,10 +318,35 @@ export function InvoiceForm() {
 
   const { fields, append, remove, replace } = useFieldArray({ control: form.control, name: "items" });
   const watchedItems = useWatch({ control: form.control, name: "items" });
+  const watchedInvoiceNumber = useWatch({ control: form.control, name: "invoiceNumber" });
   const selectedDistrict = useWatch({ control: form.control, name: "locality" }) || "";
   const selectedVillage = useWatch({ control: form.control, name: "doorNo" }) || "";
   const totals = useMemo(() => calculateInvoiceTotals(watchedItems || []), [watchedItems]);
   const serviceTypes = useMemo(() => Array.from(new Set(products.map((product) => product.type))).sort(), [products]);
+
+  useEffect(() => {
+    const trimmed = watchedInvoiceNumber?.trim();
+    if (!trimmed) {
+      setInvoiceNumberExists(false);
+      setCheckingInvoiceNumber(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setCheckingInvoiceNumber(true);
+      try {
+        const res = await fetch(`/api/invoices/check-number?number=${encodeURIComponent(trimmed)}`);
+        const data = await res.json();
+        setInvoiceNumberExists(Boolean(data.exists));
+      } catch (e) {
+        console.error("Check invoice number error:", e);
+      } finally {
+        setCheckingInvoiceNumber(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [watchedInvoiceNumber]);
 
   const availableVillages = useMemo(() => {
     if (!selectedDistrict) return [];
@@ -510,21 +538,26 @@ export function InvoiceForm() {
 
   useEffect(() => {
     async function loadData() {
-      const [productsResponse, signatureResponse, engineersResponse] = await Promise.all([
+      const [productsResponse, signatureResponse, engineersResponse, nextNumResponse] = await Promise.all([
         fetch("/api/products"),
         fetch("/api/settings/signature"),
-        fetch("/api/admins/with-signatures")
+        fetch("/api/admins/with-signatures"),
+        fetch("/api/invoices/next-number")
       ]);
-      const [productsData, signatureData, engineersData] = await Promise.all([
+      const [productsData, signatureData, engineersData, nextNumData] = await Promise.all([
         productsResponse.json(),
         signatureResponse.json(),
-        engineersResponse.json()
+        engineersResponse.json(),
+        nextNumResponse.ok ? nextNumResponse.json() : Promise.resolve({})
       ]);
       if (productsResponse.ok) setProducts(productsData.items || []);
       if (signatureResponse.ok && !signatureData.signatureDataUrl) {
         toast.info("Save an authorized signature in Settings before final billing.");
       }
       if (engineersResponse.ok) setCalEngineers(engineersData.items || []);
+      if (nextNumData?.nextInvoiceNumber) {
+        form.setValue("invoiceNumber", nextNumData.nextInvoiceNumber);
+      }
     }
     void loadData();
   }, []);
@@ -560,6 +593,11 @@ export function InvoiceForm() {
   }
 
   async function submit(values: InvoiceInput) {
+    if (invoiceNumberExists) {
+      toast.error("Invoice already exists");
+      return;
+    }
+
     setSaving(true);
     setCreatedInvoice(null);
     try {
@@ -693,6 +731,43 @@ export function InvoiceForm() {
               </CardContent>
             </Card>
           ) : null}
+
+          <Card className="overflow-hidden border-slate-200 shadow-soft">
+            <div className="bg-[#e8f2ff] border-b border-[#cce1ff] py-2.5 px-4 flex items-center justify-between text-base font-bold text-[#1d5b96]">
+              <span>Invoice Details</span>
+              <span className="text-xs font-normal text-slate-500 bg-white px-2 py-0.5 rounded border border-[#cce1ff]">
+                Auto-fetched (Editable)
+              </span>
+            </div>
+            <CardContent className="space-y-4 pt-4 pb-4">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <Field
+                  label="Invoice Number: *"
+                  error={invoiceNumberExists ? "Invoice already exists" : form.formState.errors.invoiceNumber?.message}
+                >
+                  <div className="relative">
+                    <Input
+                      placeholder="e.g. INV-2026-001"
+                      {...form.register("invoiceNumber")}
+                      className={`font-semibold tracking-wide ${
+                        invoiceNumberExists
+                          ? "border-red-500 focus-visible:ring-red-500 bg-red-50 text-red-900"
+                          : "border-slate-200"
+                      }`}
+                    />
+                    {checkingInvoiceNumber && (
+                      <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-normal">Checking...</span>
+                    )}
+                  </div>
+                  {invoiceNumberExists && (
+                    <p className="text-xs font-semibold text-red-600 mt-1 flex items-center gap-1">
+                      <span>⚠️</span> Invoice already exists
+                    </p>
+                  )}
+                </Field>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card className="overflow-hidden border-slate-200 shadow-soft">
             <div className="bg-[#fde8d7] border-b border-[#fcd5b5] py-2.5 text-center text-base font-bold text-[#d96b27]">

@@ -80,17 +80,16 @@ async function main() {
   }
 
   // ── Invoice Counter ──────────────────────────────────────────────────
-  const currentYear = new Date().getFullYear();
   const counterExists = await prisma.invoiceCounter.findUnique({
-    where: { year: currentYear },
+    where: { id: "global" },
   });
   if (!counterExists) {
     await prisma.invoiceCounter.create({
-      data: { year: currentYear, lastNumber: 0 },
+      data: { id: "global", year: 0, lastNumber: 0 },
     });
-    console.log(`  ✓ InvoiceCounter for ${currentYear}`);
+    console.log(`  ✓ Global InvoiceCounter initialized`);
   } else {
-    console.log(`  – InvoiceCounter already exists for ${currentYear}`);
+    console.log(`  – Global InvoiceCounter already exists`);
   }
 
   console.log("Seed complete.");

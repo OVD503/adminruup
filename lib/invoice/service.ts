@@ -9,12 +9,22 @@ export { roundMoney, calculateInvoiceTotals, buildInvoiceStorageKey };
 
 export type ChecklistPhoto = { label: string; dataUrl: string };
 
+export async function peekNextInvoiceNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const counter = await prisma.invoiceCounter.findUnique({
+    where: { id: "global" },
+  });
+  const nextNum = (counter?.lastNumber ?? 0) + 1;
+  return `INV-${year}-${String(nextNum).padStart(3, "0")}`;
+}
+
 async function nextInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear();
 
+  // Continuous global counter across years (never auto-resets on year end)
   const counter = await prisma.invoiceCounter.upsert({
-    where: { year },
-    create: { year, lastNumber: 1 },
+    where: { id: "global" },
+    create: { id: "global", year: 0, lastNumber: 1 },
     update: { lastNumber: { increment: 1 } },
   });
 
@@ -44,7 +54,34 @@ export async function createGeneratedInvoice(input: InvoiceInput, admin: AdminSe
     calEngineerDesignation = calSig?.designation || null;
   }
 
-  const invoiceNumber = await nextInvoiceNumber();
+  let invoiceNumber = input.invoiceNumber?.trim();
+
+  if (invoiceNumber) {
+    const existing = await prisma.invoice.findUnique({
+      where: { invoiceNumber },
+    });
+    if (existing) {
+      throw new Error("Invoice already exists");
+    }
+
+    const match = invoiceNumber.match(/^INV-\d{4}-(\d+)$/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num)) {
+        const currentCounter = await prisma.invoiceCounter.findUnique({ where: { id: "global" } });
+        const lastNum = currentCounter?.lastNumber ?? 0;
+        if (num > lastNum) {
+          await prisma.invoiceCounter.upsert({
+            where: { id: "global" },
+            create: { id: "global", year: 0, lastNumber: num },
+            update: { lastNumber: num },
+          });
+        }
+      }
+    }
+  } else {
+    invoiceNumber = await nextInvoiceNumber();
+  }
 
   const clientName = input.firmName || input.clientName || "";
   const clientAddress = input.clientAddress || [input.doorNo, input.street, input.locality, input.pinCode].filter(Boolean).join(", ");

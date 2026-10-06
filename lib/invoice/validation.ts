@@ -26,6 +26,7 @@ export const invoiceItemInputSchema = z.object({
 });
 
 export const invoiceInputSchema = z.object({
+  invoiceNumber: nullableString,
   mode: z.enum(["AUTO", "MANUAL"]).default("AUTO").optional(),
   status: z.enum(["DRAFT", "GENERATED"]).default("GENERATED"),
   invoiceDate: z.coerce.date(),
