@@ -25,6 +25,22 @@ function money(value: string | number) {
   return Number(value || 0).toLocaleString("en-IN", { style: "currency", currency: "INR" });
 }
 
+function formatInvoiceDate(value: string | Date) {
+  if (!value) return "-";
+  if (typeof value === "string") {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+    if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(date);
+}
+
 export function InvoiceList({ role }: { role: "SUPER_ADMIN" | "ADMIN" }) {
   const isSuperAdmin = role === "SUPER_ADMIN";
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -164,7 +180,7 @@ export function InvoiceList({ role }: { role: "SUPER_ADMIN" | "ADMIN" }) {
                 <tr key={invoice.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-mono font-semibold text-slate-900">{invoice.invoiceNumber}</td>
                   <td className="px-4 py-3 text-slate-700">{invoice.clientCompanyNameSnapshot || invoice.clientNameSnapshot}</td>
-                  <td className="px-4 py-3 text-slate-500">{new Date(invoice.invoiceDate).toLocaleDateString("en-IN")}</td>
+                  <td className="px-4 py-3 text-slate-500">{formatInvoiceDate(invoice.invoiceDate)}</td>
                   <td className="px-4 py-3 font-semibold text-slate-900">{money(invoice.totalAmount)}</td>
                   <td className="px-4 py-3"><Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">{invoice.status}</Badge></td>
                   {isSuperAdmin ? <td className="px-4 py-3 text-slate-700"><p>{invoice.createdBy?.displayName || "Legacy invoice"}</p><p className="font-mono text-xs text-slate-400">{invoice.createdBy?.userId || "Unassigned"}</p></td> : null}

@@ -131,19 +131,25 @@ const emptyItem = {
 };
 
 function todayDate() {
-  // Use local components so an invoice date never crosses a UTC-day boundary.
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0));
 }
 
 function formatDateForInput(value: unknown) {
+  if (!value) return "";
+  if (typeof value === "string") {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+    if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+  }
   const date = value instanceof Date ? value : new Date(String(value));
   if (Number.isNaN(date.getTime())) return "";
 
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Kolkata",
+  }).format(date);
 }
 
 function parseDateInput(value: string) {
@@ -151,10 +157,7 @@ function parseDateInput(value: string) {
   if (!match) return null;
 
   const [, year, month, day] = match;
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  return date.getFullYear() === Number(year) && date.getMonth() === Number(month) - 1 && date.getDate() === Number(day)
-    ? date
-    : null;
+  return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 12, 0, 0));
 }
 
 function money(value: number) {
@@ -525,7 +528,7 @@ export function InvoiceForm() {
           ((Number(row.cgst) || 0) +
             (Number(row.sgst) || 0) +
             (Number(row.serviceFee) || 0)) *
-            (Number(row.noOfMachines) || 1),
+          (Number(row.noOfMachines) || 1),
         0
       ),
     [feeRows]
@@ -749,11 +752,10 @@ export function InvoiceForm() {
                     <Input
                       placeholder="e.g. INV-2026-001"
                       {...form.register("invoiceNumber")}
-                      className={`font-semibold tracking-wide ${
-                        invoiceNumberExists
-                          ? "border-red-500 focus-visible:ring-red-500 bg-red-50 text-red-900"
-                          : "border-slate-200"
-                      }`}
+                      className={`font-semibold tracking-wide ${invoiceNumberExists
+                        ? "border-red-500 focus-visible:ring-red-500 bg-red-50 text-red-900"
+                        : "border-slate-200"
+                        }`}
                     />
                     {checkingInvoiceNumber && (
                       <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-normal">Checking...</span>
@@ -1456,13 +1458,7 @@ export function InvoiceForm() {
                   <div className="bg-[#1e3a8a] text-white px-6 py-2 font-bold text-xs uppercase tracking-wider flex items-center">
                     TOTAL:
                   </div>
-                  <div className="px-4 py-2 flex items-center gap-3">
-                    <input
-                      type="text"
-                      readOnly
-                      value={totalVerificationFee}
-                      className="w-24 h-8 rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-right text-slate-800"
-                    />
+                  <div className="px-4 py-2 flex items-center">
                     <input
                       type="text"
                       readOnly

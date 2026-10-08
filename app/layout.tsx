@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Toaster } from "sonner";
+import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -50,7 +51,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         />
       </head>
       <body>
-        {children}
+        <SmoothScrollProvider>
+          {children}
+        </SmoothScrollProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>

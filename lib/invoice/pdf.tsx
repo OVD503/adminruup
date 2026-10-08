@@ -315,12 +315,25 @@ function taxBreakdown(rate: number, taxRate: number) {
   return { svc: rate, cgst, sgst, total: rate + taxAmt };
 }
 
-function dateStr(value: Date) {
+function dateStr(value: Date | string) {
+  if (!value) return "-";
+  if (typeof value === "string") {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+    if (match) {
+      const [, year, month, day] = match;
+      return `${day}/${month}/${year}`;
+    }
+  }
+
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(d.getTime())) return "-";
+
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "2-digit",
-    year: "numeric"
-  }).format(new Date(value));
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(d);
 }
 
 function numberToWords(num: number): string {
